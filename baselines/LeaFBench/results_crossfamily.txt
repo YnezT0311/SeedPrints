@@ -1,0 +1,124 @@
+Cross-family correlation test - 2026-03-25 06:14:24
+================================================================================
+
+Part 0: Current N(0, 0.02) embeddings - BASE mode
+------------------------------------------------------------
+  Llama-3.1-8B         -> Mistral-7B-v0.3       perdim=0.5560  agg=0.4416  k=410
+  Llama-3.1-8B         -> Llama-2-7b            perdim=0.1579  agg=0.0857  k=410
+  Mistral-7B-v0.3      -> Llama-2-7b            perdim=0.1779  agg=0.0952  k=410
+  Mistral-7B-v0.3      -> Llama-3.1-8B          perdim=0.5530  agg=0.4625  k=410
+  Llama-2-7b           -> Llama-3.1-8B          perdim=0.1472  agg=0.0164  k=410
+  Llama-2-7b           -> Mistral-7B-v0.3       perdim=0.1688  agg=0.0307  k=410
+
+Part 1: Current N(0, 0.02) embeddings - COSET mode
+------------------------------------------------------------
+  Llama-3.1-8B         -> Mistral-7B-v0.3       perdim=0.5526  agg=0.4722  k=39
+  Llama-3.1-8B         -> Llama-2-7b            perdim=0.1419  agg=0.0442  k=48
+  Mistral-7B-v0.3      -> Llama-2-7b            perdim=0.1678  agg=0.0758  k=44
+  Mistral-7B-v0.3      -> Llama-3.1-8B          perdim=0.5526  agg=0.4722  k=39
+  Llama-2-7b           -> Llama-3.1-8B          perdim=0.1419  agg=0.0442  k=48
+  Llama-2-7b           -> Mistral-7B-v0.3       perdim=0.1678  agg=0.0758  k=44
+
+Part 2: Generating HS with N(0, 1) embeddings...
+------------------------------------------------------------
+N(0,1) embeddings generated: shape=torch.Size([2000, 1024, 4096])
+
+  Loading Llama-3.1-8B (meta-llama/Llama-3.1-8B)...
+  Loaded with dtype=torch.bfloat16, device=cuda:0
+    0/2000
+    320/2000
+    640/2000
+    960/2000
+    1280/2000
+    1600/2000
+    1920/2000
+  Llama-3.1-8B done in 298s, shape=torch.Size([2000, 4096])
+
+  Loading Mistral-7B-v0.3 (mistralai/Mistral-7B-v0.3)...
+  Loaded with dtype=torch.bfloat16, device=cuda:0
+    0/2000
+    320/2000
+    640/2000
+    960/2000
+    1280/2000
+    1600/2000
+    1920/2000
+  Mistral-7B-v0.3 done in 251s, shape=torch.Size([2000, 4096])
+
+  Loading Llama-2-7b (meta-llama/Llama-2-7b-hf)...
+  Loaded with dtype=torch.float16, device=cuda:0
+    0/2000
+    320/2000
+    640/2000
+    960/2000
+    1280/2000
+    1600/2000
+    1920/2000
+  Llama-2-7b done in 249s, shape=torch.Size([2000, 4096])
+
+Part 2a: N(0, 1) embeddings - BASE mode
+------------------------------------------------------------
+  Llama-3.1-8B         -> Mistral-7B-v0.3       perdim=0.5544  agg=0.4365  k=410
+  Llama-3.1-8B         -> Llama-2-7b            perdim=0.1523  agg=0.0913  k=410
+  Mistral-7B-v0.3      -> Llama-2-7b            perdim=0.1802  agg=0.0895  k=410
+  Mistral-7B-v0.3      -> Llama-3.1-8B          perdim=0.5530  agg=0.4634  k=410
+  Llama-2-7b           -> Llama-3.1-8B          perdim=0.1494  agg=0.0278  k=410
+  Llama-2-7b           -> Mistral-7B-v0.3       perdim=0.1715  agg=0.0183  k=410
+
+Part 2b: N(0, 1) embeddings - COSET mode
+------------------------------------------------------------
+  Llama-3.1-8B         -> Mistral-7B-v0.3       perdim=0.5459  agg=0.4728  k=35
+  Llama-3.1-8B         -> Llama-2-7b            perdim=0.1441  agg=0.0363  k=45
+  Mistral-7B-v0.3      -> Llama-2-7b            perdim=0.1703  agg=0.0777  k=49
+  Mistral-7B-v0.3      -> Llama-3.1-8B          perdim=0.5459  agg=0.4728  k=35
+  Llama-2-7b           -> Llama-3.1-8B          perdim=0.1441  agg=0.0363  k=45
+  Llama-2-7b           -> Mistral-7B-v0.3       perdim=0.1703  agg=0.0777  k=49
+
+Part 3: Within-family TP with N(0, 1) (loading instruct models)...
+------------------------------------------------------------
+
+  Loading Llama-3.1-8B-Instruct (meta-llama/Llama-3.1-8B-Instruct)...
+  Loaded with dtype=torch.bfloat16, device=cuda:0
+    0/2000
+    320/2000
+    640/2000
+    960/2000
+    1280/2000
+    1600/2000
+    1920/2000
+  Llama-3.1-8B-Instruct done in 298s, shape=torch.Size([2000, 4096])
+
+  Loading Mistral-7B-v0.3-Instruct (mistralai/Mistral-7B-Instruct-v0.3)...
+  Loaded with dtype=torch.bfloat16, device=cuda:0
+    0/2000
+    320/2000
+    640/2000
+    960/2000
+    1280/2000
+    1600/2000
+    1920/2000
+  Mistral-7B-v0.3-Instruct done in 251s, shape=torch.Size([2000, 4096])
+
+  Loading Llama-2-7b-chat (meta-llama/Llama-2-7b-chat-hf)...
+  Loaded with dtype=torch.float16, device=cuda:0
+    0/2000
+    320/2000
+    640/2000
+    960/2000
+    1280/2000
+    1600/2000
+    1920/2000
+  Llama-2-7b-chat done in 247s, shape=torch.Size([2000, 4096])
+
+Within-family TP - N(0,1) BASE mode:
+  Llama-3.1-8B         -> Llama-3.1-8B-Instruct  perdim=0.9367  agg=0.8894  k=410
+  Mistral-7B-v0.3      -> Mistral-7B-v0.3-Instruct  perdim=0.9878  agg=0.9806  k=410
+  Llama-2-7b           -> Llama-2-7b-chat       perdim=0.6017  agg=0.4472  k=410
+
+Within-family TP - N(0,1) COSET mode:
+  Llama-3.1-8B         -> Llama-3.1-8B-Instruct  perdim=0.9364  agg=0.8921  k=343
+  Mistral-7B-v0.3      -> Mistral-7B-v0.3-Instruct  perdim=0.9877  agg=0.9813  k=391
+  Llama-2-7b           -> Llama-2-7b-chat       perdim=0.6013  agg=0.4563  k=299
+
+================================================================================
+DONE. Check results_crossfamily.txt for full results.

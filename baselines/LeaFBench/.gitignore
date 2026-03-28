@@ -1,0 +1,7 @@
+/models
+/logs
+/cache
+/results
+/.vscode
+*.log
+test.py

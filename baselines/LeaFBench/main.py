@@ -1,0 +1,187 @@
+from benchmark import base_models
+from utils.utils import load_args, setup_environment, init_log, load_config
+import pandas as pd
+import os
+from benchmark.benchmark import Benchmark, save_fingerprints, load_fingerprints, reset_model_fingerprints
+from fingerprint.fingerprint_factory import create_fingerprint_method
+
+
+if __name__ == "__main__":
+    args = load_args()
+    
+    # Load configurations
+    benchmark_config = load_config(args.benchmark_config)
+    fingerprint_config = load_config(args.fingerprint_config)
+    args.seed = fingerprint_config.get("seed", 42)
+
+    args.fingerprint_method = fingerprint_config.get("fingerprint_method", None)
+    if args.fingerprint_method is None:
+        raise ValueError("Fingerprint method must be specified in the fingerprint configuration file.")
+
+    # Initialize logging
+    logger = init_log(args)
+    
+    # save config to args.save_path
+    if args.save_path is not None:
+        os.makedirs(args.save_path, exist_ok=True)
+        config_save_path = os.path.join(args.save_path, "config.json")
+        with open(config_save_path, 'w') as f:
+            pd.DataFrame([benchmark_config, fingerprint_config]).to_json(f, orient='records', indent=4)
+        logger.info(f"Configuration saved to {config_save_path}")
+    logger.info("Configuration loaded successfully!")
+    logger.info(f"Benchmark config: {benchmark_config}")
+    logger.info(f"Fingerprint config: {fingerprint_config}")
+
+    # Setup accelerator environment
+    accelerator, device = setup_environment(args)
+    
+    # initialize the benchmark with accelerator
+    benchmark = Benchmark(benchmark_config, accelerator=accelerator, 
+                          fingerprint_type=fingerprint_config.get("fingerprint_type", "black-box"),
+                          fingerprint_method=fingerprint_config.get("fingerprint_method", None))
+
+    # initialize the fingerprint method with accelerator
+    fingerprint_method = create_fingerprint_method(fingerprint_config, accelerator=accelerator)
+
+    # get cached fingerprints path for potential use in error handling
+    cached_fingerprints_path = fingerprint_config.get("cached_fingerprints_path", None)
+    
+    # resume the cached fingerprints if available (only main process loads, then broadcast)
+    if not fingerprint_config.get("re_fingerprinting"):
+        # if accelerator.is_main_process:
+        load_fingerprints(cached_fingerprints_path, benchmark)
+
+        # Reset fingerprints for models specified in regenerate_model_list
+        regenerate_model_list = benchmark_config.get("regenerate_model_list", [])
+        if regenerate_model_list:
+            logger.info(f"Found {len(regenerate_model_list)} models specified for fingerprint regeneration")
+            reset_model_fingerprints(benchmark, regenerate_model_list)
+        else:
+            logger.info("No models specified for fingerprint regeneration")
+
+    logger.info(f"Fingerprint method {fingerprint_config.get('fingerprint_method')} initialized.")
+    logger.info(f"Benchmark initialized with {len(benchmark.list_available_models())} models.")
+    logger.info(f"Available models: {benchmark.list_available_models()}")
+
+    # prepare fingerprint method (this may involve training)
+    logger.info("Preparing fingerprint method...")
+    fingerprint_method.prepare(train_models=benchmark.get_training_models())
+
+    # extracting fingerprints from all the models
+    # logger.info("Extracting fingerprints from models...")
+    all_models = benchmark.get_all_models()
+    try:
+        for model_name, model in all_models.items():
+            logger.info(f"Extracting fingerprint for model: {model_name}")
+            if model.get_fingerprint() is not None:
+                logger.info(f"Fingerprint for {model_name} already exists, skipping...")
+                continue
+            fingerprint = fingerprint_method.get_fingerprint(model)
+            model.set_fingerprint(fingerprint)
+            logger.info(f"Fingerprint for {model_name} extracted successfully.")
+    except Exception as e:
+        # save the fingerprints if any error occurs (only on main process)
+        if accelerator.is_main_process:
+            logger.error(f"Error during fingerprint extraction: {e}")
+            if cached_fingerprints_path is not None:
+                logger.info("Saving fingerprints to cache due to error...")
+                try:
+                    save_fingerprints(cached_fingerprints_path, benchmark)
+                    logger.info("Fingerprints saved successfully during error handling.")
+                except Exception as save_error:
+                    logger.error(f"Failed to save fingerprints during error handling: {save_error}")
+            else:
+                logger.warning("No cached fingerprints path specified, cannot save fingerprints during error.")
+        raise
+    
+    # Save the fingerprints to cache (only on main process)
+    if cached_fingerprints_path is not None:
+        save_fingerprints(cached_fingerprints_path, benchmark)
+        logger.info("Fingerprints saved to cache successfully!")
+    else:
+        logger.warning("No cached fingerprints path specified, cannot save fingerprints to cache.")
+    # compare fingerprints of different models using the integrated evaluation method
+    if accelerator.is_main_process:
+        logger.info("Evaluating fingerprinting method...")
+        evaluation_results = benchmark.evaluate_fingerprinting_method(
+            fingerprint_method=fingerprint_method,
+            save_path=args.save_path
+        )
+        logger.info("Fingerprinting method evaluation completed!")
+        
+        # Log summary of results
+        if 'overall_metrics' in evaluation_results:
+            logger.info("Overall Metrics:")
+            overall = evaluation_results['overall_metrics']
+            logger.info(f"  Global Threshold: {overall['Threshold']:.4f}")
+            logger.info(f"  AUC: {overall['AUC']:.4f}, Accuracy: {overall['Accuracy']:.4f}")
+            logger.info(f"  TPR: {overall['TPR']:.4f}, TNR: {overall['TNR']:.4f}")
+            logger.info(f"  Mean Difference: {overall['Mean_Diff']:.4f}")
+            logger.info(f"  TPR at 1% FPR: {overall['TPR_at_1_FPR']:.4f}")
+            logger.info(f"  KS Statistic: {overall['KS_Statistic']:.4f}")
+            logger.info(f"  Mahalanobis Distance: {overall['Mahalanobis_Distance']:.4f}")
+            logger.info(f"  Total Samples: {overall['Total_Samples']}")
+        
+        if 'family_metrics' in evaluation_results:
+            logger.info("Model Family Metrics:")
+            for family, metrics in evaluation_results['family_metrics'].items():
+                logger.info(f"  {family}:")
+                for metric_type in ['pretrained', 'instruct', 'overall']:
+                    if metric_type in metrics:
+                        auc = metrics[metric_type]['AUC']
+                        acc = metrics[metric_type]['Accuracy']
+                        samples = metrics[metric_type]['Total_Samples']
+                        threshold = metrics[metric_type]['Threshold']
+                        mean_diff = metrics[metric_type]['Mean_Diff']
+                        tpr_at_1_fpr = metrics[metric_type]['TPR_at_1_FPR']
+                        ks_stat = metrics[metric_type]['KS_Statistic']
+                        mahal_dist = metrics[metric_type]['Mahalanobis_Distance']
+                        logger.info(f"    {metric_type}: AUC={auc:.4f}, Accuracy={acc:.4f}, Mean_Diff={mean_diff:.4f}, TPR@1%FPR={tpr_at_1_fpr:.4f}, KS={ks_stat:.4f}, Mahal={mahal_dist:.4f}, Threshold={threshold:.4f}, Samples={samples}")
+        
+        if 'type_metrics' in evaluation_results:
+            logger.info("Model Type Metrics:")
+            for type_name, metrics in evaluation_results['type_metrics'].items():
+                logger.info(f"  {type_name}:")
+                for metric_type in ['pretrained', 'instruct', 'overall']:
+                    if metric_type in metrics:
+                        auc = metrics[metric_type]['AUC']
+                        acc = metrics[metric_type]['Accuracy']
+                        samples = metrics[metric_type]['Total_Samples']
+                        threshold = metrics[metric_type]['Threshold']
+                        mean_diff = metrics[metric_type]['Mean_Diff']
+                        tpr_at_1_fpr = metrics[metric_type]['TPR_at_1_FPR']
+                        ks_stat = metrics[metric_type]['KS_Statistic']
+                        mahal_dist = metrics[metric_type]['Mahalanobis_Distance']
+                        logger.info(f"    {metric_type}: AUC={auc:.4f}, Accuracy={acc:.4f}, Mean_Diff={mean_diff:.4f}, TPR@1%FPR={tpr_at_1_fpr:.4f}, KS={ks_stat:.4f}, Mahal={mahal_dist:.4f}, Threshold={threshold:.4f}, Samples={samples}")
+        
+        if 'base_model_metrics' in evaluation_results:
+            logger.info("Base Model Metrics (Individual Performance):")
+            for base_model_name, metrics in evaluation_results['base_model_metrics'].items():
+                auc = metrics['AUC']
+                acc = metrics['Accuracy']
+                total_samples = metrics['Total_Samples']
+                pos_samples = metrics['Positive_Samples']
+                neg_samples = metrics['Negative_Samples']
+                threshold = metrics['Threshold']
+                mean_diff = metrics['Mean_Diff']
+                tpr_at_1_fpr = metrics['TPR_at_1_FPR']
+                ks_stat = metrics['KS_Statistic']
+                mahal_dist = metrics['Mahalanobis_Distance']
+                model_type = metrics['Base_Model_Type']
+                model_family = metrics['Model_Family']
+                logger.info(f"  {base_model_name} ({model_family}-{model_type}): AUC={auc:.4f}, Accuracy={acc:.4f}, Mean_Diff={mean_diff:.4f}, TPR@1%FPR={tpr_at_1_fpr:.4f}, KS={ks_stat:.4f}, Mahal={mahal_dist:.4f}, Pos/Neg={pos_samples}/{neg_samples}, Total={total_samples}")
+    
+    # Wait for all processes to complete before exiting
+    accelerator.wait_for_everyone()
+    # Properly cleanup the distributed process group
+    if accelerator is not None:
+        # End the accelerator to properly cleanup distributed resources
+        accelerator.end_training()
+        
+        # Additional cleanup for distributed training
+        if hasattr(accelerator.state, 'process_group') and accelerator.state.process_group is not None:
+            import torch.distributed as dist
+            if dist.is_initialized():
+                dist.destroy_process_group()
+    
+    logger.info("Program completed successfully.")

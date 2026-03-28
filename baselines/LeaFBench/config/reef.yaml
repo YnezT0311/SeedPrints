@@ -1,0 +1,12 @@
+# global configuration for all the fingerprinting methods
+fingerprint_method: 'reef'
+cached_fingerprints_path: 'cache/reef/reef_fingerprints.pth'
+re_fingerprinting: False
+fingerprint_type: 'white-box'
+seed: 42
+
+# configuration for reef
+dataset_path: 'data/truthfulqa.csv'
+num_samples: 200
+layers: 18
+batch_size: 8

@@ -1,0 +1,18 @@
+# global configuration for all the fingerprinting methods
+fingerprint_method: 'seed'
+cached_fingerprints_path: 'cache/seed/seed_fingerprints.pth'
+re_fingerprinting: False
+fingerprint_type: 'white-box'
+seed: 42
+
+# configuration for seed
+random_input_path: 'cache/seed/fingerprint_input'
+num_sequences: 2000
+seq_length: 1024
+output_type: 'hidden_states' # 'logits' or 'hidden_states'
+batch_size: 32
+# num_k: 200 # number of bottom-k to consider when comparing fingerprints
+ratio_k: 0.1
+num_random_baseline_trials: 10
+test_type: 't-test' # 't-test' or 'u-test'
+output_save_dir: 'cache/seed/outputs'

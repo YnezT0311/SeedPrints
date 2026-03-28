@@ -1,0 +1,311 @@
+import logging
+from collections import OrderedDict
+import os
+import torch
+import torch.nn as nn
+from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedModel
+from peft import AutoPeftModelForCausalLM
+from gptqmodel.nn_modules.qlinear.torch import BaseQuantLinear, TorchQuantLinear
+from gptqmodel import BACKEND, GPTQModel
+from accelerate import disk_offload, dispatch_model, infer_auto_device_map
+from accelerate.utils import get_balanced_memory
+import gc
+
+class ModelPool:
+    def __init__(self, accelerator=None, max_loaded_models=1, offload_path=None, fingerprint_type="black-box", fingerprint_method=None):
+        # self.models = {}  # {model_name: model_instance}
+        self.tokenizers = OrderedDict()  # {model_name: tokenizer_instance}
+        self.model_paths = OrderedDict()  # {model_name: model_path}
+        self.accelerator = accelerator
+        self.current_loaded_models = OrderedDict()  # {model_name: model_instance}
+        self.max_loaded_models = max_loaded_models
+        self.offload_path = offload_path
+        if self.offload_path:
+            os.makedirs(self.offload_path, exist_ok=True)
+        self.fingerprint_type = fingerprint_type
+        self.fingerprint_method = fingerprint_method
+        self.backend = BACKEND("torch")  # Set backend for gptqmodel
+
+    def register_model(self, model_name, model_path):
+        """
+        Register the model path, but do not load the model.
+        """
+        self.model_paths[model_name] = model_path
+        # with init_empty_weights():
+        # self.models[model_name] = AutoModelForCausalLM.from_pretrained(model_path) if model_path else None
+        # tokenizer = AutoTokenizer.from_pretrained(model_path) if model_path else None
+        # Set pad token if it doesn't exist
+        # if tokenizer.pad_token is None:
+            # tokenizer.pad_token = tokenizer.eos_token
+
+        # self.tokenizers[model_name] = tokenizer
+
+    def get_tokenizer(self, model_name):
+        """
+        Get the tokenizer for the specified model, load it on demand and cache it.
+        """
+        tokenizer = AutoTokenizer.from_pretrained(self.model_paths[model_name]) if self.model_paths[model_name] else None
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        return tokenizer
+
+    def get_model(self, model_name, type=None):
+        """
+        Get the model object, load it to the specified device (default GPU) on demand.
+        Uses accelerator for proper multi-GPU management if available.
+        """
+        logger = logging.getLogger(__name__)
+        if self.model_paths[model_name] is None:
+            raise ValueError(f"Model {model_name} not registered.")
+        else:
+            if model_name not in self.current_loaded_models.keys():
+                if len(self.current_loaded_models) >= self.max_loaded_models:
+                    # Unload the least recently used model
+                    oldest_model_name = next(iter(self.current_loaded_models))
+                    logger.info(f"Unloading {oldest_model_name} to make room for {model_name}")
+                    
+                    # Get the model to be unloaded
+                    model_to_unload = self.current_loaded_models[oldest_model_name]
+                    
+                    # Completely unload the model from memory
+                    self._completely_unload_model(model_to_unload, oldest_model_name, logger)
+                    
+                    # Remove from the loaded models dictionary
+                    del self.current_loaded_models[oldest_model_name]
+                    
+                    logger.info(f"Successfully unloaded {oldest_model_name} and freed all memory")
+        
+                # Load the new model
+                if type == "adapter":
+                    model = AutoPeftModelForCausalLM.from_pretrained(
+                        self.model_paths[model_name], 
+                        device_map="balanced", 
+                        torch_dtype=torch.bfloat16
+                    )
+                    model = model.merge_and_unload()
+                    for param in model.parameters():
+                        param.requires_grad = True
+                elif type == "quantization":
+                    # Only dequantize if needed for white-box fingerprinting
+                    if self.fingerprint_type == "white-box":
+                        model = GPTQModel.load(
+                            self.model_paths[model_name], 
+                            device_map={"": "cpu"},  # Load to single device first
+                            torch_dtype=torch.bfloat16,
+                            backend=self.backend
+                        )
+                        model = dequantize_model(model, torch.bfloat16)
+                        no_split_module_classes = model._no_split_modules
+                        max_memory = get_balanced_memory(
+                            model,
+                            max_memory=None,
+                            no_split_module_classes=no_split_module_classes,
+                            dtype=torch.bfloat16
+                        )
+
+                        device_map = infer_auto_device_map(
+                            model,
+                            max_memory=max_memory,
+                            no_split_module_classes=no_split_module_classes,
+                            dtype=torch.bfloat16
+                        )
+                        model = dispatch_model(model, device_map=device_map)
+                    else:
+                        model = GPTQModel.load(
+                            self.model_paths[model_name], 
+                            device_map="auto", 
+                            torch_dtype=torch.bfloat16,
+                            backend=self.backend
+                        )
+                else:
+                    # Use model's native dtype; FA2 for fp16/bf16, sdpa for fp32
+                    from transformers import AutoConfig
+                    try:
+                        _cfg = AutoConfig.from_pretrained(
+                            self.model_paths[model_name], trust_remote_code=True)
+                        _native = getattr(_cfg, 'torch_dtype', torch.bfloat16)
+                    except Exception:
+                        _native = torch.bfloat16
+                    # Gemma2: use "auto" to avoid splitting RMSNorm across GPUs
+                    _is_gemma = "gemma" in self.model_paths[model_name].lower()
+                    _load_kwargs = {
+                        "device_map": "auto" if _is_gemma else "balanced",
+                        "trust_remote_code": True,
+                    }
+                    if _native in (torch.float16, torch.bfloat16) and not _is_gemma:
+                        # Promote float16 → bfloat16: same FA2 path but wider
+                        # exponent range avoids overflow with long random sequences.
+                        _load_kwargs["torch_dtype"] = torch.bfloat16
+                        _load_kwargs["attn_implementation"] = "flash_attention_2"
+                    else:
+                        _load_kwargs["torch_dtype"] = _native if _native in (torch.float16, torch.bfloat16) else torch.float32
+                        _load_kwargs["attn_implementation"] = "sdpa"
+                    logger.info(f"Loading {model_name} with dtype={_load_kwargs['torch_dtype']}, "
+                                f"attn={_load_kwargs.get('attn_implementation', 'default')}")
+                    model = AutoModelForCausalLM.from_pretrained(
+                        self.model_paths[model_name], **_load_kwargs
+                    )
+                self.current_loaded_models[model_name] = model
+                logger.info(f"{len(self.current_loaded_models)} models loaded in the pool")
+                
+            else:
+                # Move to end (most recently used)
+                model = self.current_loaded_models.pop(model_name)
+                self.current_loaded_models[model_name] = model
+                
+            return self.current_loaded_models[model_name]
+
+    def list_models(self):
+        """
+        List all registered models.
+        """
+        return list(self.model_paths.keys())
+    
+    def _completely_unload_model(self, model, model_name, logger):
+        """
+        Completely unload a model from memory, including GPU and CPU memory.
+        """
+        
+        try:
+            # Step 1: Clear all hooks that might keep references
+            if hasattr(model, '_forward_hooks'):
+                model._forward_hooks.clear()
+            if hasattr(model, '_backward_hooks'):
+                model._backward_hooks.clear()
+            if hasattr(model, '_forward_pre_hooks'):
+                model._forward_pre_hooks.clear()
+            
+            # Step 2: Handle models with device_map (distributed across devices)
+            if hasattr(model, 'hf_device_map'):
+                logger.info(f"Model {model_name} has device_map, performing distributed cleanup")
+                
+                # For models with device_map, we need to clear each device
+                for module_name, device in model.hf_device_map.items():
+                    try:
+                        module = model
+                        for attr in module_name.split('.'):
+                            if attr:
+                                module = getattr(module, attr)
+                        
+                        # Move module to CPU and clear its data
+                        if hasattr(module, 'weight') and module.weight is not None:
+                            module.weight.data = module.weight.data.cpu()
+                            del module.weight
+                        if hasattr(module, 'bias') and module.bias is not None:
+                            module.bias.data = module.bias.data.cpu()
+                            del module.bias
+                    except Exception as e:
+                        logger.warning(f"Error clearing module {module_name}: {e}")
+                
+                # Clear the device map
+                if hasattr(model, 'hf_device_map'):
+                    del model.hf_device_map
+            
+            # Step 3: Move all parameters and buffers to CPU and delete them
+            params_to_delete = []
+            buffers_to_delete = []
+            
+            for name, param in model.named_parameters():
+                if param.device.type == 'cuda':
+                    param.data = param.data.cpu()
+                params_to_delete.append((name, param))
+            
+            for name, buffer in model.named_buffers():
+                if buffer.device.type == 'cuda':
+                    buffer.data = buffer.data.cpu()
+                buffers_to_delete.append((name, buffer))
+            
+            # Clear parameter and buffer references
+            for name, param in params_to_delete:
+                try:
+                    delattr(model, name.split('.')[-1]) if '.' not in name else None
+                except:
+                    pass
+                del param
+                
+            for name, buffer in buffers_to_delete:
+                try:
+                    delattr(model, name.split('.')[-1]) if '.' not in name else None
+                except:
+                    pass
+                del buffer
+            
+            # Step 4: Clear model's internal state
+            if hasattr(model, 'config'):
+                del model.config
+            if hasattr(model, 'generation_config'):
+                del model.generation_config
+            
+            # Step 5: Force model to CPU (if not already done)
+            try:
+                model.cpu()
+            except:
+                pass
+            
+            # Step 6: Multiple rounds of cleanup
+            for i in range(3):
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
+                    # Reset peak memory stats
+                    torch.cuda.reset_peak_memory_stats()
+            
+            logger.info(f"Model {model_name} completely unloaded from memory")
+            
+        except Exception as e:
+            logger.error(f"Error during complete model unloading: {e}")
+            # Fallback: still try basic cleanup
+            try:
+                model.cpu()
+                gc.collect()
+                torch.cuda.empty_cache()
+            except:
+                pass
+
+def dequantize_model(model: PreTrainedModel, dtype: torch.dtype):
+    modules_to_replace = []
+    # First, collect all quantized modules that need to be replaced
+    for name, module in model.named_modules():
+        if isinstance(module, BaseQuantLinear):
+            if not isinstance(module, TorchQuantLinear):
+                 raise ValueError(
+                    "Only models using TorchQuantLinear are supported for dequantization."
+                    "Please load the model with backend='torch'."
+                )
+            modules_to_replace.append((name, module))
+
+    for name, module in modules_to_replace:
+        # Create a new, non-quantized nn.Linear module
+        # Since the model is on CPU, the new module is also created on CPU
+        device = torch.device("cpu")
+        has_bias = module.bias is not None and module.bias.numel() > 0
+
+        new_module = nn.Linear(
+            in_features=module.in_features,
+            out_features=module.out_features,
+            bias=has_bias,
+            device=device,
+            dtype=dtype
+        )
+
+        # Dequantize the weights and assign them to the new module
+        # The .T is used depending on the output shape of `dequantize_weight`.
+        # Assume `dequantize_weight` outputs (in, out), after transpose it becomes (out, in), matching nn.Linear.weight shape.
+        dequantized_weight = module.dequantize_weight().T
+        new_module.weight = nn.Parameter(dequantized_weight.detach())
+
+        if has_bias:
+            new_module.bias = nn.Parameter(module.bias.detach())
+
+        # Use a more robust way to locate and replace the submodule in the parent module
+        parent_name, module_name = name.rsplit('.', 1) if '.' in name else ('', name)
+        parent = model.get_submodule(parent_name) if parent_name else model
+        setattr(parent, module_name, new_module)
+
+    # Clean up quantization information in the model config
+    if hasattr(model.config, 'quantization_config'):
+        del model.config.quantization_config
+        model.config.is_quantized = False # Add a flag
+
+    return model.model
