@@ -12,14 +12,9 @@ def release():
     
 def load_params(model_tag):
     
-    if "/" in model_tag:
-        if "llama" in model_tag.lower():
-            model = AutoModelForCausalLM.from_pretrained(model_tag,trust_remote_code=True, token="HF_TOKEN_PLACEHOLDER")
-        else:
-            model = AutoModelForCausalLM.from_pretrained(model_tag,trust_remote_code=True)
-    else:
-        model_path = os.path.join('/disk2/haonan/tongyao/model/', model_tag)
-        model = AutoModelForCausalLM.from_pretrained(model_path,trust_remote_code=True)
+    hf_token = os.environ.get("HF_TOKEN", None)
+    model = AutoModelForCausalLM.from_pretrained(model_tag, trust_remote_code=True,
+                                                  token=hf_token)
     model = model.eval()
     params = torch.cat([model.state_dict()[key].view(-1) for key in model.state_dict().keys() if 'lm_head' not in key and 'embed' not in key]) 
 

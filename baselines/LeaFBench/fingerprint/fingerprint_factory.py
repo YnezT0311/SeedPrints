@@ -8,7 +8,6 @@ from fingerprint.trap.trap import TRAPFingerprint
 from fingerprint.met.model_equality_testing import METFingerprint
 from fingerprint.sef.sef import SEFFingerprint
 from fingerprint.seed.seed import SeedFingerprint
-from fingerprint.seed.seed_token import SeedTokenFingerprint
 
 
 def create_fingerprint_method(config=None, accelerator=None) -> LLMFingerprintInterface:
@@ -31,7 +30,5 @@ def create_fingerprint_method(config=None, accelerator=None) -> LLMFingerprintIn
         return SEFFingerprint(config=config, accelerator=accelerator)
     elif method_name == "seed":
         return SeedFingerprint(config=config, accelerator=accelerator)
-    elif method_name == "seed_token":
-        return SeedTokenFingerprint(config=config, accelerator=accelerator)
     else:
         raise ValueError(f"Unknown fingerprinting method: {method_name}")

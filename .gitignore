@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 fingerprints/
 *.pt
+*.pth
+*.bin
+baselines/LeaFBench/cache/
+baselines/REEF-master/src/results/
+baselines/REEF-master/src/activations/

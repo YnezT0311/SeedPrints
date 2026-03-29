@@ -383,8 +383,8 @@ class Benchmark:
         similarity_df.to_csv(similarity_csv_path)
         logger.info(f"Similarity matrix saved to: {similarity_csv_path}")
 
-        # # load similarity matrix from /disk2/haonan/tongyao/proj_2025_fingerprint/baselines/LeaFBench/logs/seed/2025-09-19-22:26:12/similarity_matrix_updated.csv
-        # similarity_df = pd.read_csv('/disk2/haonan/tongyao/proj_2025_fingerprint/baselines/LeaFBench/logs/seed/2025-09-19-22:26:12/similarity_matrix_updated.csv', index_col=0)
+        # # To load a pre-computed similarity matrix instead:
+        # similarity_df = pd.read_csv('path/to/similarity_matrix.csv', index_col=0)
         # similarity_matrix = similarity_df.T.to_dict()
 
         # 2. Calculate global optimal threshold first

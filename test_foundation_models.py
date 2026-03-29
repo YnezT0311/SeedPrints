@@ -129,6 +129,12 @@ def main():
     script_dir = os.path.abspath(os.path.dirname(__file__))
     root = os.path.abspath(os.path.join(script_dir, ".."))
 
+    # Ensure output directories exist
+    os.makedirs(os.path.join(root, "results/foundations/json"), exist_ok=True)
+    os.makedirs(os.path.join(root, "results/olmo/json"), exist_ok=True)
+    os.makedirs(os.path.join(root, "model/foundations"), exist_ok=True)
+    os.makedirs(os.path.join(script_dir, "fingerprints"), exist_ok=True)
+
     # Logging
     is_olmo = is_olmo_checkpoint(args.target_model) or is_olmo_checkpoint(args.base_model)
     subdir = "olmo" if is_olmo else "foundations"

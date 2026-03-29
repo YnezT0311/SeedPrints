@@ -48,7 +48,7 @@ def load_tokenizer(path):
 
 def sort_tokens_frequency(path,savepath,datanum=400000,num_process=40):
     tokenizer = AutoTokenizer.from_pretrained(path)
-    dataset = load_dataset("cambridge-climb/BabyLM", cache_dir="/disk2/haonan/tongyao/datasets", trust_remote_code=True)
+    dataset = load_dataset("cambridge-climb/BabyLM", trust_remote_code=True)
 
     word_freq = collections.Counter()
     for i in range(len(dataset["train"]["text"]) // datanum):
@@ -65,6 +65,6 @@ def sort_tokens_frequency(path,savepath,datanum=400000,num_process=40):
             if tokenizer.convert_ids_to_tokens(item[0]) not in ['<unk>','<s>','</s>']:#filter <unk> <s> </s>,which may influence the alignment
                 file.write(str(item[0]) + '\n')
 
-model_path="/disk2/haonan/tongyao/model/llama-160M-openwebtext-seed-1000"  # Example model path, adjust as needed
-output_path="/disk2/haonan/tongyao/proj_2025_fingerprint/baselines/HuRef-main/sorted_tokens"
+model_path="allenai/OLMo-2-1124-7B"  # Example model path, adjust as needed
+output_path="sorted_tokens/"
 sort_tokens_frequency(model_path,output_path)

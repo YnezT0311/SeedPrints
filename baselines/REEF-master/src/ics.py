@@ -12,10 +12,8 @@ import os
 
 torch.manual_seed(42)
 
-# with open('/disk2/haonan/tongyao/proj_2025_fingerprint/baselines/HuRef-main/sorted_tokens/sorted_tokens.json', 'r', encoding='utf-8') as f:
-#     sorted_token_dict = json.load(f)
-
-with open('/disk2/haonan/tongyao/proj_2025_fingerprint/baselines/HuRef-main/sorted_tokens/llama-160M-openwebtext-seed-1000.txt', 'r', encoding='utf-8') as f:
+SORTED_TOKENS_PATH = os.environ.get("SORTED_TOKENS_PATH", "sorted_tokens/sorted_tokens.txt")
+with open(SORTED_TOKENS_PATH, 'r', encoding='utf-8') as f:
     sorted_tokens = f.read().splitlines()
 
 def attack(X_hat, W_q, W_k, W_v, W_o, W_up, W_down, attack_type):
@@ -82,7 +80,7 @@ def attack(X_hat, W_q, W_k, W_v, W_o, W_up, W_down, attack_type):
     return X_hat, W_q, W_k, W_v, W_o, W_up, W_down
 
 def invariant_terms(model_tag, layers, do_attack=False, attack_type='att'):
-    # model_path = os.path.join('/disk2/haonan/tongyao/model/', model_tag)
+    # model_path = os.path.join('model/', model_tag)
     # model_path = get_model_save_path(model_tag)
     model_path = model_tag
     # tokenizer = AutoTokenizer.from_pretrained(model_path,trust_remote_code=True)

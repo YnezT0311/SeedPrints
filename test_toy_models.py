@@ -21,6 +21,9 @@ from transformers import AutoTokenizer, LlamaConfig, LlamaForCausalLM
 import seedprint
 import utils
 
+# HuggingFace repo for toy models (fallback when local path not found)
+HF_TOY_REPO = "YnezT/SeedPrints-toy-models"
+
 
 # ── Model Loading ────────────────────────────────────────────────────────────
 
@@ -38,12 +41,33 @@ def parse_model_name(name):
     return "trained", prefix, seed
 
 
+def _resolve_model_path(model_path, hf_subfolder):
+    """Return local path if exists, otherwise download from HF."""
+    if os.path.exists(model_path):
+        return model_path
+    logging.info(f"Local path not found: {model_path}")
+    logging.info(f"Downloading from HuggingFace: {HF_TOY_REPO}/{hf_subfolder}")
+    from huggingface_hub import snapshot_download
+    local_dir = snapshot_download(
+        HF_TOY_REPO,
+        allow_patterns=f"{hf_subfolder}/*",
+        local_dir=os.path.dirname(model_path),
+    )
+    downloaded = os.path.join(local_dir, hf_subfolder)
+    if os.path.exists(downloaded):
+        return downloaded
+    return model_path
+
+
 def prepare_model(model_arch, model_type, dataset_or_ckpt, seed, root_dir):
     """Load or create a toy model. Returns (model, model_path)."""
     tokenizer = AutoTokenizer.from_pretrained("huggyllama/llama-7b")
 
     if model_type == "init":
-        model_path = os.path.join(root_dir, f"model/init-{model_arch}-seed-{seed}")
+        hf_subfolder = f"init-{model_arch}-seed-{seed}"
+        model_path = os.path.join(root_dir, f"model/{hf_subfolder}")
+        if not os.path.exists(model_path):
+            model_path = _resolve_model_path(model_path, hf_subfolder)
         if os.path.exists(model_path):
             logging.info(f"Loading init model (seed={seed}) from {model_path}")
             model = LlamaForCausalLM.from_pretrained(model_path)
@@ -62,12 +86,15 @@ def prepare_model(model_arch, model_type, dataset_or_ckpt, seed, root_dir):
                 max_position_embeddings=2048,
             )
             model = LlamaForCausalLM(config)
+            os.makedirs(model_path, exist_ok=True)
             model.save_pretrained(model_path)
     elif model_type == "trained":
         dataset = dataset_or_ckpt
         dir_name = f"{model_arch}-{dataset}" if dataset == "openwebtext" \
                    else f"{model_arch}-finetune-{dataset}"
-        model_path = os.path.join(root_dir, f"model/{dir_name}-seed-{seed}")
+        hf_subfolder = f"{dir_name}-seed-{seed}"
+        model_path = os.path.join(root_dir, f"model/{hf_subfolder}")
+        model_path = _resolve_model_path(model_path, hf_subfolder)
         logging.info(f"Loading trained model from {model_path}")
         model = LlamaForCausalLM.from_pretrained(model_path)
     elif model_type == "checkpoint":
@@ -126,6 +153,11 @@ def main():
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     script_dir = os.path.abspath(os.path.dirname(__file__))
 
+    # Ensure output directories exist
+    os.makedirs(os.path.join(root_dir, "results/json"), exist_ok=True)
+    os.makedirs(os.path.join(root_dir, "model"), exist_ok=True)
+    os.makedirs(os.path.join(script_dir, "fingerprints"), exist_ok=True)
+
     # Logging
     log_file = os.path.join(root_dir,
         f"results/{args.input_type}-base-{args.base_model}_target-{args.target_model}.log")
@@ -149,11 +181,13 @@ def main():
             args.num_samples, args.fingerprint_len)
         cache_suffix = f"fingerprint{args.num_samples}_hiddenstate_token_{args.fingerprint_len}.pt"
     else:
-        # For embedding input, we need a model to estimate embedding statistics
         init_model_path = os.path.join(root_dir, f"model/init-{args.model_arch}-seed-{base_seed}")
         emb_path = os.path.join(script_dir,
             f"fingerprints/random_embeddings_{args.num_samples}_{args.fingerprint_len}.pt")
         if not os.path.exists(emb_path):
+            # Try to load init model (local or HF)
+            init_model_path = _resolve_model_path(
+                init_model_path, f"init-{args.model_arch}-seed-{base_seed}")
             init_model = LlamaForCausalLM.from_pretrained(init_model_path)
             utils.generate_random_embeddings(init_model, emb_path,
                                              args.num_samples, args.fingerprint_len)

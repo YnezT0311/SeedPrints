@@ -48,8 +48,7 @@ def load_tokenizer(path):
 
 def sort_tokens_frequency(path,savepath,datanum=400000,num_process=40):
     tokenizer = AutoTokenizer.from_pretrained(path)
-    # dataset = load_dataset("Skylion007/openwebtext", cache_dir="/disk2/haonan/tongyao/datasets", trust_remote_code=True)
-    dataset = load_from_disk("/disk2/haonan/tongyao/datasets/openwebtext-2048-2B")
+    dataset = load_dataset("Skylion007/openwebtext", trust_remote_code=True)
     word_freq = collections.Counter()
     for i in range(len(dataset["train"]) // datanum):
         data = dataset["train"][i * datanum: (i + 1) * datanum]["input_ids"]
@@ -83,6 +82,6 @@ def sort_tokens_frequency(path,savepath,datanum=400000,num_process=40):
         if count > 4096:
             break
 
-model_path="/disk2/haonan/tongyao/model/init-llama-seed-1000"  # Example model path, adjust as needed
-output_path="/disk2/haonan/tongyao/proj_2025_fingerprint/baselines/HuRef-main/sorted_tokens"
+model_path="allenai/OLMo-2-1124-7B"  # Example model path, adjust as needed
+output_path="sorted_tokens/"
 sort_tokens_frequency(model_path,output_path)
