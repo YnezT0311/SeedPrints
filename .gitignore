@@ -7,3 +7,5 @@ fingerprints/
 baselines/LeaFBench/cache/
 baselines/REEF-master/src/results/
 baselines/REEF-master/src/activations/
+baselines/HuRef-main/encoders/
+baselines/LeaFBench/data/
