@@ -198,45 +198,10 @@ def release():
     gc.collect()
 
 
-# layers = [30, 31]
-# smodel_tag = 'llama-2-7b'
-# s_vector = invariant_terms(smodel_tag, layers)
-
-# tmodel_tags = [
-#     'llama-2-7b-chat', 'vicuna-7b-v1.5', 'tulu-2-7b', 'llama-2-coder-7b', 'llama-2-finance-7b',
-#     'chinese-llama-2-7b', 'Sheared-LLaMA-2.7B-ShareGPT', 'wizardmath-7b','llemma-7b','codellama-7b',
-#     'llama-3-8b','mistral-7b', 'baichuan-2-7b','internlm2-7b', 'qwen-7b-v1.5',  
-#     'Sheared-LLaMA-2.7B-ShareGPT','Sheared-LLaMA-2.7B-Pruned','Sheared-LLaMA-2.7B',
-#     'Sheared-LLaMA-1.3B-ShareGPT','Sheared-LLaMA-1.3B-Pruned','Sheared-LLaMA-1.3B',
-#     # 'shisa-gamma-7b', 'wizardmath-7b-1.1', 'abel-7b-002'
-#     # 'openllama-2-7b', 'mpt-7b'
-#     'wandallama-2-7b', 'gblmllama-2-7b', 'sparsellama-2-7b',
-# ]
-
-# for tmodel_tag in tmodel_tags:
-#     if '1.3B' in tmodel_tag:
-#         layers = [22,23]
-#     t_vector = invariant_terms(tmodel_tag, layers)
-
-#     assert s_vector.size()[0] == t_vector.size()[0]
-#     cos_simi = cosine_similarity(s_vector, t_vector)
-#     print(f'ICS of {smodel_tag} and {tmodel_tag} is: {cos_simi}')
-
-#     release()
-
-
 layers = [10, 11]
-# smodel_tag = 'llama-160M-openwebtext-seed-42'
 smodel_tag = "stage1-step928000-tokens3893B"
 s_vector = invariant_terms(smodel_tag, layers)
 
-# tmodel_tags = [
-#     'llama-160M-finetune-TinyStoriesV2_cleaned-seed-1000', 'llama-160M-finetune-TinyStoriesV2_cleaned-seed-123',
-#     'llama-160M-fullset-finetune-code_stack-seed-1000', 'llama-160M-fullset-finetune-code_stack-seed-123',
-# ]
-# tmodel_tags = [
-#     'init-llama-160M-seed-42'
-# ]
 tmodel_tags = [
     "stage1-step1000-tokens5B",
     "stage1-step207000-tokens869B",

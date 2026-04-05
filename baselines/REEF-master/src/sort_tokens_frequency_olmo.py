@@ -48,39 +48,22 @@ def load_tokenizer(path):
 
 def sort_tokens_frequency(path,savepath,datanum=400000,num_process=40):
     tokenizer = AutoTokenizer.from_pretrained(path)
-    dataset = load_dataset("Skylion007/openwebtext", trust_remote_code=True)
+    dataset = load_dataset("cambridge-climb/BabyLM", trust_remote_code=True)
+
     word_freq = collections.Counter()
-    for i in range(len(dataset["train"]) // datanum):
-        data = dataset["train"][i * datanum: (i + 1) * datanum]["input_ids"]
-        # turn input ids to text
-        data = [tokenizer.decode(item, skip_special_tokens=True) for item in data]
+    for i in range(len(dataset["train"]["text"]) // datanum):
+        data = dataset["train"]["text"][i * datanum: (i + 1) * datanum]
         data = list(filter(filter_nonenglish_text, data))
         word_freq += process(data, num_process, tokenizer)
-    remainder = len(dataset["train"]) % datanum
-    data = dataset["train"][-remainder:]["input_ids"]
-    data = [tokenizer.decode(item, skip_special_tokens=True) for item in data]
+    remainder = len(dataset["train"]["text"]) % datanum
+    data = dataset["train"]["text"][-remainder:]
     data = list(filter(filter_nonenglish_text, data))
     word_freq += process(data, num_process, tokenizer)
-    least_first = sorted(word_freq.items(), key=lambda item: (item[1], item[0]))
-
-    model_tag = path.split("/")[-1]
-    skip_tokens = ['<unk>', '<s>', '</s>']
-    picked = OrderedDict()
-    count = 0
-    for tok_str, freq in least_first:
-        if tok_str in skip_tokens:
-            continue
-        picked[tok_str] = int(freq)
-        count += 1
-        if count in [1000,2048,4096]:
-            K = count
-            os.makedirs(savepath, exist_ok=True)
-            out_path = os.path.join(savepath, f"{model_tag}_least_{K}.json")
-            with open(out_path, "w", encoding="utf-8") as f:
-                json.dump(picked, f, ensure_ascii=False, indent=2)
-        
-        if count > 4096:
-            break
+    top_tokens = sorted(word_freq.items(), key=lambda item: (item[1], item[0]), reverse=True)
+    with open(savepath+path.split("/")[-1]+'.txt', 'w') as file:
+        for item in top_tokens:
+            if tokenizer.convert_ids_to_tokens(item[0]) not in ['<unk>','<s>','</s>']:#filter <unk> <s> </s>,which may influence the alignment
+                file.write(str(item[0]) + '\n')
 
 model_path="allenai/OLMo-2-1124-7B"  # Example model path, adjust as needed
 output_path="sorted_tokens/"

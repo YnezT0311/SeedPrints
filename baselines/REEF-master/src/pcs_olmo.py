@@ -52,39 +52,10 @@ def cal_cos(source_params, target_params, align_strategy='truncation'):
     return cosine_similarity
 
     
-
-# source_params = load_params('llama-2-7b')
-# tmodel_tags = [
-#     'llama-2-7b-chat', 'vicuna-7b-v1.5', 'tulu-2-7b', 'llama-2-coder-7b', 'llama-2-finance-7b',
-#     'chinese-llama-2-7b', 'Sheared-LLaMA-2.7B-ShareGPT', 'wizardmath-7b','llemma-7b','codellama-7b',
-#     'llama-3-8b','mistral-7b', 'baichuan-2-7b','internlm2-7b', 'qwen-7b-v1.5',  
-#     'Sheared-LLaMA-2.7B-ShareGPT','Sheared-LLaMA-2.7B-Pruned','Sheared-LLaMA-2.7B',
-#     'Sheared-LLaMA-1.3B-ShareGPT','Sheared-LLaMA-1.3B-Pruned','Sheared-LLaMA-1.3B',
-#     # 'shisa-gamma-7b', 'wizardmath-7b-1.1', 'abel-7b-002'
-#     # 'openllama-2-7b', 'mpt-7b'
-#     'wandallama-2-7b', 'gblmllama-2-7b', 'sparsellama-2-7b',
-# ]
-# base_model = 'init-llama-seed-1000'
-# source_params = load_params(base_model)
-# tmodel_tags = [
-#     'llama-160M-openwebtext-seed-1000', 'llama-160M-openwebtext-seed-123',
-# ]
-
-# base_model = 'llama-160M-fullset-openwebtext-seed-42'
-# source_params = load_params(base_model)
-# tmodel_tags = [
-#     'llama-160M-finetune-TinyStoriesV2_cleaned-seed-1000', 'llama-160M-finetune-TinyStoriesV2_cleaned-seed-123',
-#     'llama-160M-fullset-finetune-code_stack-seed-1000', 'llama-160M-fullset-finetune-code_stack-seed-123',
-# ]
-# tmodel_tags = [
-#     'init-llama-160M-seed-42',
-# ]
-
 base_model = "stage1-step928000-tokens3893B"
 source_params = load_params(base_model)
 tmodel_tags = [
     "stage1-step1000-tokens5B",
-    # "stage1-step104000-tokens437B", #0.875
     "stage1-step207000-tokens869B",
     "stage1-step310000-tokens1301B",
     "stage1-step413000-tokens1733B",

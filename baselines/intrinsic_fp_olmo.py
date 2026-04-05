@@ -205,8 +205,6 @@ def main(target_model_name, ref_model_name, args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculate intrinsic fingerprint correlation between two models.")
-    # parser.add_argument("--target_model_name", type=str, default='init-llama-160M', help="Name of the suspected target model.")
-    # parser.add_argument("--ref_model_name", type=str, default='llama-160M-fullset-openwebtext', help="Name of the reference protected model.")
     parser.add_argument("--target_model_name", type=str, default='EleutherAI/llemma_7b', help="Name of the suspected target model.")
     parser.add_argument("--ref_model_name", type=str, default="stage1-step928000-tokens3893B", help="Name of the reference protected model.")
     parser.add_argument("--model_type", type=str, default="llama", choices=["llama", "qwen"], help="Type of the models (llama or qwen).")
@@ -226,5 +224,3 @@ if __name__ == "__main__":
 
     for target_model_name in target_model_names:
         main(target_model_name, args.ref_model_name, args)
-
-    # 0.127, 0.959, 0.979, 0.988, 0.993, 0.996, 0.998, 1.0, 1.0

@@ -99,9 +99,6 @@ if __name__ == "__main__":
     Compute the CKA of the base model (victim model) and the test model (suspect model)
     """
     parser = argparse.ArgumentParser(description="Generate activations for statements in a dataset")
-    # parser.add_argument("--base_model", default="llama-160M-openwebtext-seed-123")
-    # parser.add_argument("--base_layers", nargs='+', type=int, default=[12], help="Layers to load activations; can also set 24/32/40/80 to load all layers' activations according to the model size")
-    # parser.add_argument("--test_model", default="init-llama-seed-123")
     parser.add_argument("--base_model", default="stage1-step928000-tokens3893B")
     parser.add_argument("--base_layers", nargs='+', type=int, default=[12], help="Layers to load activations; can also set 24/32/40/80 to load all layers' activations according to the model size")
     parser.add_argument("--test_model", default="stage1-step928000-tokens3893B")

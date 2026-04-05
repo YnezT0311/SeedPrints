@@ -59,7 +59,7 @@ use_agg: False                               # include agg signal (default: per-
 
 ## How to Run
 
-### Quick start (with cached fingerprints)
+### Quick start
 
 We provide pre-computed hidden states and random token sequences for fast reproduction. Download them from HuggingFace:
 
