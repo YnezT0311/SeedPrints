@@ -125,8 +125,8 @@ SeedPrint supports two types of random inputs. The key principle is: **both mode
 
 ### Other arguments
 
-- **`--identity_mode coset`** (default): Use the intersection of both models' bottom-k dimensions. More robust than `base` (which uses only the base model's dimensions).
-- **`--use_agg`**: Adds a second signal (single Kendall tau on per-sample mean across identity dimensions), combined with per-dim via max z-score and Bonferroni correction. Reduces variance and makes borderline false positives less likely to reach significance.
+- **`--identity_mode coset`** (default): Use the intersection of both models' bottom-k dimensions. More robust than `base` (which uses only the base model's dimensions), especially when the base model is a trained model rather than a randomly initialized one.
+- **`--use_agg`**: Adds a second signal (single Kendall tau on per-sample mean across identity dimensions), combined with per-dim via max z-score and Bonferroni correction. Reduces variance and makes borderline false positives less likely to reach significance. Disabled by default, as the per-dim signal alone is already sufficient in all our experiments.
 
 ## Citation
 
