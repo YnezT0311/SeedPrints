@@ -1,5 +1,5 @@
 from fingerprint.fingerprint_interface import LLMFingerprintInterface
-from fingerprint.seed.utils import get_random_tokens, get_output_for_tokens
+from fingerprint.seed.utils import get_random_tokens, get_output
 from fingerprint.seed.correlation_test import test_lineage
 
 
@@ -39,7 +39,7 @@ class SeedFingerprint(LLMFingerprintInterface):
             seq_length=self.seq_length,
             min_vocab_size=self.min_vocab_size,
         )
-        fingerprint = get_output_for_tokens(
+        fingerprint = get_output(
             torch_model, token_path,
             batch_size=self.batch_size,
             accelerator=self.accelerator,

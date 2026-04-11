@@ -22,14 +22,13 @@ Implements `test_lineage()` — the core SeedPrint hypothesis test:
 4. Z-score against the analytical null distribution (no simulation needed).
 5. Return a p-value (smaller = more evidence of shared lineage).
 
-Supports `identity_mode="coset"` (intersection of both models' bottom-k) or `"base"` (use base model only). And coset is the default.
+Supports `identity_mode="coset"` (intersection of both models' bottom-k dimensions; default) or `"base"` (use only the base model's bottom-k dimensions).
 
-Optional `use_agg=True` adds a second signal of correlation computed over dimensional mean (combined via max z-score with Bonferroni correction). This counts aggregated statistics to reduce the randomness, raises the p-value of borderline false positives while preserving power for strong true positives. Default is per-dim only.
+Optional `use_agg=True` adds a second signal: a single Kendall tau computed on the per-sample mean across identity dimensions. The two signals are combined via max z-score with Bonferroni correction. This aggregation reduces variance and makes borderline false positives less likely to reach significance, while preserving detection power for true positives. Default is per-dim only.
 
 ### `utils.py`
-- `get_random_tokens()`: Generate/cache random token ID sequences.
-- `get_output_for_tokens()`: Forward pass token IDs → last-token hidden states.
-- `get_output()`: Forward pass embeddings → hidden states or logits.
+- `get_random_tokens()`: Generate or load cached random token ID sequences.
+- `get_output()`: Forward pass token IDs through model, return last-token hidden states.
 
 ## Configuration
 
@@ -41,7 +40,6 @@ re_fingerprinting: False
 fingerprint_type: 'white-box'
 seed: 42
 
-input_type: 'token'                         # "token" or "embedding"
 random_input_path: 'cache/seed/fingerprint_input'
 num_sequences: 2000                          # number of random sequences
 seq_length: 1024                             # tokens per sequence
@@ -64,9 +62,9 @@ We provide pre-computed hidden states and random token sequences for fast reprod
 pip install huggingface_hub
 python -c "
 from huggingface_hub import hf_hub_download
-hf_hub_download('YnezT0311/SeedPrints-cache', 'seed_fingerprints.pth',
+hf_hub_download('YnezT/SeedPrints-cache', 'seed_fingerprints.pth',
                 local_dir='cache/seed/')
-hf_hub_download('YnezT0311/SeedPrints-cache', 'random_tokens_2000_1024_vocab32000.pt',
+hf_hub_download('YnezT/SeedPrints-cache', 'random_tokens_2000_1024_vocab32000.pt',
                 local_dir='cache/seed/fingerprint_input/')
 "
 ```
