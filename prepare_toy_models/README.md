@@ -21,7 +21,8 @@ python prepare_openwebtext.py --model_arch llama
 python prepare_openwebtext.py --model_arch qwen
 
 # Code Stack (for continual training, Table 3)
-python prepare_code_stack.py
+python prepare_code_stack.py --model_arch llama
+python prepare_code_stack.py --model_arch qwen
 ```
 
 ### 2. Pre-train with different seeds

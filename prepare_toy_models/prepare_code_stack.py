@@ -1,20 +1,34 @@
 """
 Prepare the Code Stack dataset for toy model continual training (Table 3).
 
+Usage:
+    python prepare_code_stack.py                     # Llama tokenizer (default)
+    python prepare_code_stack.py --model_arch qwen   # Qwen tokenizer
+
 Downloads a Python subset of The Stack, tokenizes, chunks into 2048-token
 blocks, and saves to disk.
 
-NOTE: We use the huggyllama/llama-7b tokenizer (vocab_size=32000) for
-historical reasons. meta-llama/Llama-2-7b-hf is the more standard choice
-and has the same vocab_size=32000, so either works identically. If you
-switch to a tokenizer with a different vocab size, update the LlamaConfig
-in train.py accordingly.
+NOTE: Llama uses huggyllama/llama-7b (vocab=32000) for historical reasons.
+meta-llama/Llama-2-7b-hf has the same vocab and works identically.
+Qwen uses Qwen/Qwen2-7B (vocab=151936).
 """
 
 import os
+import argparse
 from datasets import load_dataset, Dataset, DatasetDict
 from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer
+
+TOKENIZERS = {
+    "llama": ("huggyllama/llama-7b", "./datasets/code-stack"),
+    "qwen":  ("Qwen/Qwen2-7B",      "./datasets/qwen/code-stack"),
+}
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_arch", type=str, default="llama", choices=["llama", "qwen"])
+args = parser.parse_args()
+
+tokenizer_name, output_dir = TOKENIZERS[args.model_arch]
 
 # Download subset
 snapshot_download(
@@ -34,11 +48,10 @@ dataset = load_dataset(
     ],
     split="train",
 )
-
 dataset = dataset.train_test_split(test_size=0.0005, seed=42357, shuffle=True)
 
 # Tokenize
-tokenizer = AutoTokenizer.from_pretrained("huggyllama/llama-7b")
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 eos = tokenizer.eos_token_id
 
 def tokenize(example):
@@ -48,19 +61,15 @@ def tokenize(example):
     return tokens
 
 tokenized = dataset.map(
-    tokenize,
-    remove_columns=["content"],
-    batched=False,
-    num_proc=16,
-    desc="Tokenizing dataset",
+    tokenize, remove_columns=["content"], batched=False, num_proc=16,
+    desc=f"Tokenizing ({args.model_arch})",
 )
 
 # Chunk into 2048-token blocks
 block_size = 2048
 
 def chunk_across_examples(dataset, block_size):
-    buffer = []
-    input_blocks = []
+    buffer, input_blocks = [], []
     for example in dataset:
         buffer.extend(example["input_ids"])
         while len(buffer) >= block_size:
@@ -76,7 +85,6 @@ lm_dataset = DatasetDict({
     for split in tokenized.keys()
 })
 
-output_dir = "./datasets/code-stack"
 os.makedirs(output_dir, exist_ok=True)
 lm_dataset.save_to_disk(output_dir)
 print(f"Saved to {output_dir}: {lm_dataset}")
