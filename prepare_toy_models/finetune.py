@@ -1,9 +1,9 @@
 """
-Continual-train (finetune) a pre-trained 160M Llama on a new dataset.
+Continual-train (finetune) a pre-trained 160M toy model on a new dataset.
 
 Usage:
-    python finetune.py --init_seed 1000 --finetune_set TinyStoriesV2_cleaned
-    python finetune.py --init_seed 1000 --finetune_set code_stack
+    python finetune.py --init_seed 1000 --model_arch llama --finetune_set TinyStoriesV2_cleaned
+    python finetune.py --init_seed 1000 --model_arch qwen --finetune_set code_stack
 
 This loads a model pre-trained on OpenWebText (from train.py) and continues
 training on a different dataset. Used for Table 3 experiments.
@@ -11,6 +11,8 @@ training on a different dataset. Used for Table 3 experiments.
 NOTE: We use the huggyllama/llama-7b tokenizer (vocab_size=32000) for
 historical reasons. meta-llama/Llama-2-7b-hf is the more standard choice
 and has the same vocab_size=32000, so either works identically.
+
+Qwen uses the Qwen/Qwen2-7B tokenizer (vocab_size=151936).
 """
 
 import os
@@ -20,8 +22,24 @@ import numpy as np
 import torch
 import wandb
 from datasets import load_dataset, load_from_disk, DatasetDict
-from transformers import (AutoTokenizer, LlamaForCausalLM,
-                          TrainingArguments, Trainer, DataCollatorForLanguageModeling)
+from transformers import (AutoTokenizer, TrainingArguments, Trainer,
+                          DataCollatorForLanguageModeling)
+
+
+ARCH_CONFIG = {
+    "llama": {
+        "tokenizer": "huggyllama/llama-7b",
+        "model_cls": "LlamaForCausalLM",
+        "prefix": "llama-160M",
+        "dataset_subdir": "",
+    },
+    "qwen": {
+        "tokenizer": "Qwen/Qwen2-7B",
+        "model_cls": "Qwen2ForCausalLM",
+        "prefix": "qwen-160M",
+        "dataset_subdir": "qwen",
+    },
+}
 
 
 def set_seed(seed: int):
@@ -33,35 +51,48 @@ def set_seed(seed: int):
 
 
 def main(args):
+    arch = ARCH_CONFIG[args.model_arch]
+    prefix = arch["prefix"]
+
     wandb.init(
         project="seedprints-toy",
-        name=f"llama-160M-finetune-{args.finetune_set}-seed-{args.init_seed}",
+        name=f"{prefix}-finetune-{args.finetune_set}-seed-{args.init_seed}",
         config={"init_seed": args.init_seed, "global_seed": args.global_seed,
-                "finetune_set": args.finetune_set},
+                "model_arch": args.model_arch, "finetune_set": args.finetune_set},
     )
 
-    tokenizer = AutoTokenizer.from_pretrained("huggyllama/llama-7b")
+    tokenizer = AutoTokenizer.from_pretrained(arch["tokenizer"])
     tokenizer.pad_token = tokenizer.eos_token
 
+    # Import the right model class
+    if args.model_arch == "llama":
+        from transformers import LlamaForCausalLM as ModelCls
+    else:
+        from transformers import Qwen2ForCausalLM as ModelCls
+
     # Load or prepare finetuning dataset
-    dataset_path = os.path.join(args.dataset_dir, args.finetune_set)
+    dataset_dir = args.dataset_dir
+    if arch["dataset_subdir"]:
+        dataset_dir = os.path.join(dataset_dir, arch["dataset_subdir"])
+    dataset_path = os.path.join(dataset_dir, args.finetune_set)
+
     if os.path.exists(dataset_path):
         tokenized_dataset = load_from_disk(dataset_path)
     else:
         if args.finetune_set == "TinyStoriesV2_cleaned":
             dataset = load_dataset("fhswf/TinyStoriesV2_cleaned", trust_remote_code=True)
-            # Downsample 1/20
             n = len(dataset["train"]) // 20
             dataset["train"] = dataset["train"].shuffle(seed=args.global_seed).select(range(n))
         elif args.finetune_set == "BabyLM":
             dataset = load_dataset("cambridge-climb/BabyLM", trust_remote_code=True)
         elif args.finetune_set == "code_stack":
-            # Must run prepare_code_stack.py first
-            dataset = load_from_disk("./datasets/code-stack")
-            # Wrap in expected format
+            code_path = os.path.join(os.path.dirname(dataset_dir), "code-stack")
+            if not os.path.exists(code_path):
+                raise RuntimeError("Run prepare_code_stack.py first")
+            dataset = load_from_disk(code_path)
+            os.makedirs(dataset_path, exist_ok=True)
+            dataset.save_to_disk(dataset_path)
             tokenized_dataset = dataset
-            tokenized_dataset.save_to_disk(dataset_path)
-            print(f"Loaded code_stack from ./datasets/code-stack")
         else:
             raise ValueError(f"Unknown finetune_set: {args.finetune_set}")
 
@@ -80,14 +111,14 @@ def main(args):
             tokenized_dataset.save_to_disk(dataset_path)
 
     # Load pre-trained model
-    pretrained_path = os.path.join(args.model_dir, f"llama-160M-openwebtext-seed-{args.init_seed}")
+    pretrained_path = os.path.join(args.model_dir, f"{prefix}-openwebtext-seed-{args.init_seed}")
     print(f"Loading pre-trained model from {pretrained_path}")
-    model = LlamaForCausalLM.from_pretrained(pretrained_path)
+    model = ModelCls.from_pretrained(pretrained_path)
 
     set_seed(args.global_seed)
 
     training_args = TrainingArguments(
-        output_dir=f"./llama-160M-finetune-{args.finetune_set}-seed-{args.init_seed}",
+        output_dir=f"./{prefix}-finetune-{args.finetune_set}-seed-{args.init_seed}",
         per_device_train_batch_size=4,
         per_device_eval_batch_size=4,
         gradient_accumulation_steps=8,
@@ -115,7 +146,7 @@ def main(args):
 
     trainer.train()
 
-    save_dir = os.path.join(args.model_dir, f"llama-160M-finetune-{args.finetune_set}-seed-{args.init_seed}")
+    save_dir = os.path.join(args.model_dir, f"{prefix}-finetune-{args.finetune_set}-seed-{args.init_seed}")
     os.makedirs(save_dir, exist_ok=True)
     trainer.save_model(save_dir)
     print(f"Saved finetuned model to {save_dir}")
@@ -123,6 +154,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model_arch", type=str, default="llama", choices=["llama", "qwen"])
     parser.add_argument("--init_seed", type=int, default=1000)
     parser.add_argument("--global_seed", type=int, default=42)
     parser.add_argument("--finetune_set", type=str, default="TinyStoriesV2_cleaned",

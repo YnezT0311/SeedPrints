@@ -52,18 +52,11 @@ CUDA_VISIBLE_DEVICES=0,1 python test_foundation_models.py \
     --base_model Llama-2-7b
 ```
 
-Expected output:
-```
-z_perdim: 153.7581
-p_value: 0
-k: 81
-```
-
 ## Reproducing Paper Results
 
 ### Toy Models (Tables 1–4)
 
-Toy models (160M parameters) are automatically downloaded from [HuggingFace](https://huggingface.co/YnezT/SeedPrints-toy-models) if not found locally.
+We trained the small toy models (~160M parameters llama-style and qwen-style) with the training and finetuning scripts provided in `prepare_toy_models/`. You can choose to train your own (following `/prepare_toy_models/README.md`) or download our models from Huggingface. By default, toy models are automatically downloaded from [HuggingFace](https://huggingface.co/YnezT/SeedPrints-toy-models) if not found locally.
 
 ```bash
 bash run_table1.sh   # Different init seeds (expect p > 0.01)
