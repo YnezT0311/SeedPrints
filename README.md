@@ -137,9 +137,11 @@ SeedPrint supports two types of random inputs. The key principle is: **both mode
 ## Citation
 
 ```bibtex
-@inproceedings{seedprints2026,
-    title={SeedPrints: Fingerprints Can Even Tell Which Seed Your Large Language Model Was Trained From},
-    booktitle={International Conference on Learning Representations (ICLR)},
-    year={2026}
+@inproceedings{tong2026seedprints,
+    title     = {SeedPrints: Fingerprints Can Even Tell Which Seed Your Large Language Model Was Trained From},
+    author    = {Tong, Yao and Wang, Haonan and Li, Siquan and Kawaguchi, Kenji and Hu, Tianyang},
+    booktitle = {International Conference on Learning Representations (ICLR)},
+    year      = {2026},
+    url       = {https://arxiv.org/abs/2509.26404}
 }
 ```
