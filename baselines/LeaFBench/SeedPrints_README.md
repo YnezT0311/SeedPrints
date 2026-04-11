@@ -12,7 +12,7 @@ fingerprint/seed/
 ```
 
 ### `seed.py`
-The `SeedFingerprint` class implements the LeaFBench `LLMFingerprintInterface`, using **random token IDs** as input. Although SeedPrints supports both random tokens and random continuous embeddings, LeaFBench involves cross-family comparisons where models have different hidden sizes (e.g., Gemma-2b at 2304 vs Llama-7B at 4096). Using random embeddings would require different input tensors for different hidden sizes, introducing a clear family-wise bias (since the inputs themselves differ). To ensure a fair comparison, the LeaFBench integration uses only random token sequences (`[0, min_vocab)`), which are shared identically across all models regardless of architecture.
+The `SeedFingerprint` class implements the LeaFBench `LLMFingerprintInterface`, using **random token IDs** as input. Although SeedPrints supports both random tokens and random continuous embeddings, LeaFBench involves cross-family comparisons where models have different hidden sizes (e.g., Gemma-2b at 2304 vs Llama-7B at 4096). Using random embeddings would require different input tensors for different hidden sizes, introducing a clear family-wise bias (since the inputs themselves differ). To ensure a fair comparison, the LeaFBench integration uses only random token ID sequences (`[0, min_vocab)`), which are shared identically across all models regardless of architecture.
 
 ### `correlation_test.py`
 Implements `test_lineage()` — the core SeedPrint hypothesis test:
@@ -22,13 +22,12 @@ Implements `test_lineage()` — the core SeedPrint hypothesis test:
 4. Z-score against the analytical null distribution (no simulation needed).
 5. Return a p-value (smaller = more evidence of shared lineage).
 
-Supports `identity_mode="coset"` (intersection of both models' bottom-k) or `"base"` (use base model only).
+Supports `identity_mode="coset"` (intersection of both models' bottom-k) or `"base"` (use base model only). And coset is the default.
 
-Optional `use_agg=True` adds a second signal (per-sample mean → single Kendall tau) combined via max z-score with Bonferroni correction. This raises the p-value of borderline false positives while preserving power for strong true positives. Default is per-dim only.
+Optional `use_agg=True` adds a second signal of correlation computed over dimensional mean (combined via max z-score with Bonferroni correction). This counts aggregated statistics to reduce the randomness, raises the p-value of borderline false positives while preserving power for strong true positives. Default is per-dim only.
 
 ### `utils.py`
 - `get_random_tokens()`: Generate/cache random token ID sequences.
-- `get_random_embed()`: Generate/cache random continuous embeddings.
 - `get_output_for_tokens()`: Forward pass token IDs → last-token hidden states.
 - `get_output()`: Forward pass embeddings → hidden states or logits.
 
