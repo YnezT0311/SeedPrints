@@ -104,18 +104,35 @@ cd baselines/LeaFBench
 bash scripts/seed.sh
 ```
 
-## Default Settings
+## Key Configuration
 
-| Experiment | Input | Identity Mode | Signal |
-|------------|-------|--------------|--------|
-| Toy models (Tables 1–4) | embedding | coset | per-dim |
-| Foundation models (Table 5, Figure 3) | token | coset | per-dim |
-| LeaFBench | token | coset | per-dim |
+| Argument | Options | Default | Description |
+|----------|---------|---------|-------------|
+| `--input_type` | `token`, `embedding` | varies | Type of random input (see below) |
+| `--identity_mode` | `coset`, `base` | `coset` | How to select identity dimensions |
+| `--buffer_k` | int | `400` | Number of bottom-k dimensions to consider |
+| `--use_agg` | flag | `False` | Add aggregated signal with Bonferroni correction |
+| `--num_samples` | int | `10000` / `2000` | Number of random input sequences |
+| `--fingerprint_len` | int | `1024` | Length of each random sequence |
 
-- **Token input**: Random token IDs go through each model's embedding layer, producing model-specific hidden states. Better at distinguishing architecturally similar families (e.g., Llama-3.1 vs Mistral).
-- **Embedding input**: Random continuous embeddings bypass the embedding layer. Better for detecting init→pretrained lineage in toy models.
-- **Coset**: Use the intersection of both models' bottom-k dimensions as identity dimensions.
-- **Per-dim**: Per-column Kendall tau with softmax_T10 normalization → mean → z-score. Optional `--use_agg` adds a second signal with Bonferroni correction.
+### Choosing between token and embedding input
+
+SeedPrint supports two types of random inputs. The key principle is: **both models must receive identical inputs** for a fair comparison.
+
+- **`--input_type token`** (recommended for foundation models): Random token IDs in `[0, 32000)` are shared across all models regardless of architecture or hidden size. Each model applies its own embedding layer, so the resulting hidden states are model-specific. This is the only viable option when comparing models with different hidden sizes (e.g., cross-family comparisons in LeaFBench).
+
+- **`--input_type embedding`** (recommended for toy models): Random continuous embeddings `~ N(mu, sigma)` bypass the embedding layer. This can capture more nuanced seed-level differences within the same model family, but requires both models to have the same hidden size. Token input can also distinguish seeds, but embedding input provides stronger signal for init-to-pretrained lineage detection.
+
+| Experiment | Default Input | Reason |
+|------------|--------------|--------|
+| Toy models (Tables 1-4) | `embedding` | Same architecture, stronger seed-level signal |
+| Foundation models (Table 5, Figure 3) | `token` | Cross-family fairness, different hidden sizes |
+| LeaFBench | `token` | Cross-family benchmark |
+
+### Other arguments
+
+- **`--identity_mode coset`** (default): Use the intersection of both models' bottom-k dimensions. More robust than `base` (which uses only the base model's dimensions).
+- **`--use_agg`**: Adds a second signal (single Kendall tau on per-sample mean across identity dimensions), combined with per-dim via max z-score and Bonferroni correction. Reduces variance and makes borderline false positives less likely to reach significance.
 
 ## Citation
 
