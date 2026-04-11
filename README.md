@@ -8,15 +8,15 @@ SeedPrints is a model lineage detection method that determines whether a suspici
 
 1. Feed shared random inputs (token sequences or random embeddings) through both models
 2. Extract last-layer hidden states and identify the "identity dimensions" (i.e., the most biased output dimensions) of each model
-3. Compute per-dimension Kendall tau correlation with softmax normalization
-4. Compare against an analytical null distribution to determine whether the correlation is statistically significant
+3. Compute per-dimension Kendall tau correlation with softmax normalization between models' identity dimensions
+4. Compare against an uncorrelated null distribution (we provide both empirical and analytical implementations) to determine whether the correlation is statistically significant
 
 ## Project Structure
 
 ```
 SeedPrints/
 ├── seedprint.py               # Core algorithm
-├── utils.py                   # Inference utilities (random input generation, hidden state extraction)
+├── utils.py                   # Inference utilities
 ├── model_config.py            # Model registry (add your own models here)
 ├── test_toy_models.py         # Toy model experiments (Tables 1-4)
 ├── test_foundation_models.py  # Foundation model experiments (Table 5, Figure 3)
