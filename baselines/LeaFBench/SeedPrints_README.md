@@ -1,20 +1,18 @@
 # SeedPrint Integration in LeaFBench
 
-SeedPrint is a model lineage detection method based on random-input fingerprinting. This document describes the SeedPrint-specific files, configuration, and how to reproduce results within the LeaFBench benchmark.
+This document describes the SeedPrint-specific files, configuration, and how to reproduce results within the LeaFBench benchmark.
 
 ## File Structure
 
 ```
 fingerprint/seed/
 ├── seed.py              # Main SeedPrint class (LLMFingerprintInterface)
-├── correlation_test.py  # Z-score hypothesis test (per-dim Kendall tau, analytical null)
-└── utils.py             # Inference utilities (random input generation, hidden state extraction)
+├── correlation_test.py 
+└── utils.py
 ```
 
 ### `seed.py`
-The `SeedFingerprint` class implements the LeaFBench `LLMFingerprintInterface`. It supports two input modes:
-- **`token`** (default): Random token IDs (`[0, min_vocab)`) are passed through each model's embedding layer, producing model-specific hidden states. Recommended for foundation models.
-- **`embedding`**: Random continuous embeddings `~ N(μ, σ)` bypass the embedding layer. Recommended for toy models.
+The `SeedFingerprint` class implements the LeaFBench `LLMFingerprintInterface`, using **random token IDs** as input. Although SeedPrints supports both random tokens and random continuous embeddings, LeaFBench involves cross-family comparisons where models have different hidden sizes (e.g., Gemma-2b at 2304 vs Llama-7B at 4096). Using random embeddings would require different input tensors for different hidden sizes, introducing a clear family-wise bias (since the inputs themselves differ). To ensure a fair comparison, the LeaFBench integration uses only random token sequences (`[0, min_vocab)`), which are shared identically across all models regardless of architecture.
 
 ### `correlation_test.py`
 Implements `test_lineage()` — the core SeedPrint hypothesis test:

@@ -77,11 +77,9 @@ We trained the small toy models (~160M parameters llama-style and qwen-style) wi
 ```bash
 bash run_table1.sh   # Different init seeds (expect p > 0.01)
 bash run_table2.sh   # Init→Pretrained same seed (expect p < 0.01)
-bash run_table3.sh   # Continual training (same lineage p<0.01, cross p>0.01)
+bash run_table3.sh   # Continual training (same lineage p<0.01, cross-seed p>0.01)
 bash run_table4.sh   # Cross-seed (expect p > 0.01)
 ```
-
-Default setting: **embedding input + coset + per-dim only**.
 
 ### Foundation Models (Table 5)
 

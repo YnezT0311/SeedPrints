@@ -1,16 +1,18 @@
 from fingerprint.fingerprint_interface import LLMFingerprintInterface
-from fingerprint.seed.utils import get_random_tokens, get_random_embed, get_output_for_tokens, get_output
+from fingerprint.seed.utils import get_random_tokens, get_output_for_tokens
 from fingerprint.seed.correlation_test import test_lineage
 
 
 class SeedFingerprint(LLMFingerprintInterface):
-    """SeedPrint fingerprinting method.
+    """SeedPrint fingerprinting method for LeaFBench.
 
-    Supports two input modes:
-      - "token" (default): random token IDs through each model's embedding layer.
-        Produces model-specific hidden states; recommended for foundation models.
-      - "embedding": random continuous embeddings bypassing the embedding layer.
-        Recommended for toy models where init→pretrained lineage is tested.
+    Uses random token IDs as input. Although SeedPrint theoretically supports
+    both random tokens and random continuous embeddings, LeaFBench involves
+    cross-family comparisons where models have different hidden sizes (e.g.,
+    Gemma-2b at 2304 vs Llama-7B at 4096). Using random embeddings would
+    require different input tensors for different hidden sizes, introducing
+    a clear family-wise bias. To ensure a fair comparison, this integration
+    uses only random token sequences shared identically across all models.
 
     Default: token input + coset + perdim-only.
     """
@@ -19,12 +21,10 @@ class SeedFingerprint(LLMFingerprintInterface):
         super().__init__(config=config, accelerator=accelerator)
 
     def prepare(self, train_models=None):
-        self.input_type = self.config.get('input_type', 'token')
         self.random_input_path = self.config.get('random_input_path', 'cache/seed/fingerprint_input')
         self.num_sequences = self.config.get('num_sequences', 2000)
         self.seq_length = self.config.get('seq_length', 1024)
         self.min_vocab_size = self.config.get('min_vocab_size', 32000)
-        self.output_type = self.config.get('output_type', 'hidden_states')
         self.batch_size = self.config.get('batch_size', 4)
         self.ratio_k = self.config.get('ratio_k', 0.10)
         self.normalize = self.config.get('normalize', 'softmax_T10')
@@ -33,30 +33,17 @@ class SeedFingerprint(LLMFingerprintInterface):
 
     def get_fingerprint(self, model):
         torch_model, tokenizer = model.load_model()
-        if self.input_type == 'token':
-            token_path = get_random_tokens(
-                self.random_input_path,
-                num_sequences=self.num_sequences,
-                seq_length=self.seq_length,
-                min_vocab_size=self.min_vocab_size,
-            )
-            fingerprint = get_output_for_tokens(
-                torch_model, token_path,
-                batch_size=self.batch_size,
-                accelerator=self.accelerator,
-            )
-        else:
-            hidden_size = torch_model.config.hidden_size
-            emb_path = get_random_embed(
-                model.model_path, hidden_size, self.random_input_path,
-                num_sequences=self.num_sequences, seq_length=self.seq_length,
-            )
-            fingerprint = get_output(
-                torch_model, emb_path,
-                output_type=self.output_type,
-                batch_size=self.batch_size,
-                accelerator=self.accelerator,
-            )
+        token_path = get_random_tokens(
+            self.random_input_path,
+            num_sequences=self.num_sequences,
+            seq_length=self.seq_length,
+            min_vocab_size=self.min_vocab_size,
+        )
+        fingerprint = get_output_for_tokens(
+            torch_model, token_path,
+            batch_size=self.batch_size,
+            accelerator=self.accelerator,
+        )
         return fingerprint
 
     def compare_fingerprints(self, base_model, testing_model):
