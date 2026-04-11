@@ -6,26 +6,26 @@ SeedPrints is a model lineage detection method that determines whether a suspici
 
 ## How It Works
 
-1. Feed shared random inputs (tokens or random embeddings) through both models
-2. Extract last-layer hidden states and identify the "identity dimensions" (i.e., most biased output dimensions) of two models
-4. Compute per-dimension Kendall tau correlation with softmax normalization
-5. Compare against the uncorrelated null baseline correlation distribution to see whether the correlation is significant or not
+1. Feed shared random inputs (token sequences or random embeddings) through both models
+2. Extract last-layer hidden states and identify the "identity dimensions" (i.e., the most biased output dimensions) of each model
+3. Compute per-dimension Kendall tau correlation with softmax normalization
+4. Compare against an analytical null distribution to determine whether the correlation is statistically significant
 
 ## Project Structure
 
 ```
 SeedPrints/
 ├── seedprint.py               # Core algorithm
-├── utils.py                   
-├── model_config.py            # Model registry (You can add the models you want to test here)
-├── test_toy_models.py         # Toy model experiments (to reproduce the results in Tables 1–4 in our paper)
-├── test_foundation_models.py  # Foundation model experiments (e.g., to reproduce the results in Table 5, Figure 3, or test other foundation models your are interested)
-├── run_table1.sh              # Table 1: Different init seeds → distinct fingerprints
+├── utils.py                   # Inference utilities (random input generation, hidden state extraction)
+├── model_config.py            # Model registry (add your own models here)
+├── test_toy_models.py         # Toy model experiments (Tables 1-4)
+├── test_foundation_models.py  # Foundation model experiments (Table 5, Figure 3)
+├── run_table1.sh              # Table 1: Different init seeds -> distinct fingerprints
 ├── run_table2.sh              # Table 2: Init fingerprint preserved after pre-training
-├── run_table3.sh              # Table 3: Continual training doesn't confound fingerprint
-├── run_table4.sh              # Table 4: Same data and data order, different seeds → distinct fingerprints
-├── run_table5.sh              # Table 5: Llama-2-7B long-finetune detection
-├── run_figure3.sh             # Figure 3: OLMo-2-7B Long pre-training detection
+├── run_table3.sh              # Table 3: Continual training does not confound fingerprint
+├── run_table4.sh              # Table 4: Same data and data order, different seeds -> distinct fingerprints
+├── run_table5.sh              # Table 5: Llama-2-7B fine-tune detection
+├── run_figure3.sh             # Figure 3: OLMo-2-7B long pre-training detection
 ├── prepare_toy_models/        # Scripts to train toy models from scratch
 └── baselines/                 # Baseline methods and LeaFBench integration
     ├── LeaFBench/             # Benchmark across 6 model families, 58 models
