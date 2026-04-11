@@ -138,7 +138,7 @@ def run_test(hs_base, hs_target, buffer_k=DEFAULT_BUFFER_K,
 
     Primary signal (always computed):
       perdim: per-column Kendall tau on softmax_T10-normalized bottom-k
-              dimensions → mean of k taus → z-score.
+              dimensions → z-score.
 
     Optional signal (use_agg=True):
       agg: per-sample mean of raw bottom-k values → single Kendall tau → z-score.

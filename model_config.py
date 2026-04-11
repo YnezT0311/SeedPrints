@@ -47,6 +47,7 @@ OLMO_CHECKPOINTS = [
     "stage1-step1000-tokens5B",
     "stage1-step207000-tokens869B",
     "stage1-step310000-tokens1301B",
+    "stage1-step413000-tokens1733B",
     "stage1-step516000-tokens2165B",
     "stage1-step619000-tokens2597B",
     "stage1-step722000-tokens3029B",

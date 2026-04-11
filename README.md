@@ -2,7 +2,13 @@
 
 Official code for [**SeedPrints: Fingerprints Can Even Tell Which Seed Your Large Language Model Was Trained From**](https://arxiv.org/abs/2509.26404) (ICLR 2026).
 
-SeedPrints is a model lineage detection method that determines whether a suspicious model B is derived from a given model A, not by relying on trained model family-wise behaviors but by leveraging the underlying bias originating from the base model — even the randomly initialized model. As a result, it significantly outperforms existing fingerprinting methods for detecting lineage across long pre-training stages. We consider this a biometric-like fingerprint: like a human fingerprint, it is something the model is born with at random initialization, and remains traceable across the entire lifecycle.
+<p align="center">
+  <img src="figures/seedprints_vs_baselines.png" width="800">
+</p>
+
+Most of a model's capacity and knowledge are acquired during pre-training rather than downstream fine-tuning. Yet existing fingerprinting methods have largely overlooked this stage — their evaluations focus on lineage verification after fine-tuning, where detection is considerably easier, potentially giving a false sense of safety. We show that, in the pre-training regime, **existing methods become unreliable**: they consistently fail at early training checkpoints (see figure above), because they extract post-hoc signatures based on training dynamics, data exposure, or hyperparameters — properties that only emerge after substantial training.
+
+SeedPrints takes a fundamentally different approach. Instead of relying on trained behaviors, it leverages the underlying bias originating from the base model — even the randomly initialized model. We consider this a biometric-like fingerprint: like a human fingerprint, it is something the model is born with at random initialization, and remains traceable across the entire lifecycle. As a result, SeedPrints reliably detects lineage from the very first checkpoint onward, even after trillions of tokens of pre-training.
 
 ## How It Works
 
