@@ -108,9 +108,9 @@ bash scripts/seed.sh
 
 | Argument | Options | Default | Description |
 |----------|---------|---------|-------------|
-| `--input_type` | `token`, `embedding` | varies | Type of random input (see below) |
+| `--input_type` | `token`, `embedding` | `token` | Type of random input (see below) |
 | `--identity_mode` | `coset`, `base` | `coset` | How to select identity dimensions |
-| `--buffer_k` | int | `400` | Number of bottom-k dimensions to consider |
+| `--buffer_k` | int | 10% of output size | Number of bottom-k dimensions to consider |
 | `--use_agg` | flag | `False` | Add aggregated signal with Bonferroni correction |
 | `--num_samples` | int | `10000` / `2000` | Number of random input sequences |
 | `--fingerprint_len` | int | `1024` | Length of each random sequence |
