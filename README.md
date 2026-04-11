@@ -38,6 +38,11 @@ SeedPrints/
 ### Installation
 
 ```bash
+# Option 1: Conda (recommended)
+conda env create -f environment.yml
+conda activate fingerprint
+
+# Option 2: pip
 pip install -r requirements.txt
 ```
 
