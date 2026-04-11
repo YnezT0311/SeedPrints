@@ -46,15 +46,12 @@ conda activate fingerprint
 pip install -r requirements.txt
 ```
 
-### Example: Test if llemma-7b is derived from Llama-2-7b
+### Example: Test if an OLMo-2-7B checkpoint shares lineage with an earlier checkpoint
 
 ```bash
-# Set your HuggingFace token for gated models (Llama family)
-export HF_TOKEN="your_token_here"
-
 CUDA_VISIBLE_DEVICES=0,1 python test_foundation_models.py \
-    --target_model llemma-7b \
-    --base_model Llama-2-7b
+    --target_model stage1-step928000-tokens3893B \
+    --base_model stage1-step1000-tokens5B
 ```
 
 ## Reproducing Paper Results
