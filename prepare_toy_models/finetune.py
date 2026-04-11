@@ -8,7 +8,9 @@ Usage:
 This loads a model pre-trained on OpenWebText (from train.py) and continues
 training on a different dataset. Used for Table 3 experiments.
 
-NOTE: The tokenizer (huggyllama/llama-7b, vocab=32000) must match train.py.
+NOTE: We use the huggyllama/llama-7b tokenizer (vocab_size=32000) for
+historical reasons. meta-llama/Llama-2-7b-hf is the more standard choice
+and has the same vocab_size=32000, so either works identically.
 """
 
 import os

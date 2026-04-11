@@ -1,34 +1,31 @@
 # SeedPrints
 
-Official code for **SeedPrints: Fingerprints Can Even Tell Which Seed Your Large Language Model Was Trained From** (ICLR 2026).
+Official code for [**SeedPrints: Fingerprints Can Even Tell Which Seed Your Large Language Model Was Trained From**](https://arxiv.org/abs/2509.26404) (ICLR 2026).
 
-SeedPrint is a model lineage detection method that determines whether a suspicious model is derived from a given base model, using only random inputs and hidden state correlations — no training data, no fine-tuning, no watermark embedding required.
+SeedPrints is a model lineage detection method that determines whether a suspicious model B is derived from a given model A, not using the trained model family-wise behaviors but relying on the underlying bias originated from base model (even the randomly initialized model). Therefore, it 展现出远超于现有fingerprinting 方法的对于long pretraining阶段的detection表现。我们consider this as a biometric-like fingerprint， like human fingerprint，是something the model be born with at the random initialization, and tractable accross the lifecycle.
 
 ## How It Works
 
-1. Feed shared random inputs (token IDs or continuous embeddings) through both models
-2. Extract last-layer hidden states
-3. Identify "identity dimensions" (bottom-k by mean activation) shared between the two models
+1. Feed shared random inputs (tokens or random embeddings) through both models
+2. Extract last-layer hidden states and identify the "identity dimensions" (i.e., most biased output dimensions) of two models
 4. Compute per-dimension Kendall tau correlation with softmax normalization
-5. Z-score against an analytical null distribution — no simulation needed
-
-If the p-value is below a significance threshold (e.g., 0.01), the two models share lineage.
+5. Compare against the uncorrelated null baseline correlation distribution to see whether the correlation is significant or not
 
 ## Project Structure
 
 ```
 SeedPrints/
-├── seedprint.py               # Core algorithm (identity extraction, correlation, z-score test)
-├── utils.py                   # Inference utilities (random input generation, hidden state extraction)
-├── model_config.py            # Model registry (HF model IDs, OLMo checkpoints)
-├── test_toy_models.py         # Toy model experiments (Tables 1–4)
-├── test_foundation_models.py  # Foundation model experiments (Table 5, Figure 3)
+├── seedprint.py               # Core algorithm
+├── utils.py                   
+├── model_config.py            # Model registry (You can add the models you want to test here)
+├── test_toy_models.py         # Toy model experiments (to reproduce the results in Tables 1–4 in our paper)
+├── test_foundation_models.py  # Foundation model experiments (e.g., to reproduce the results in Table 5, Figure 3, or test other foundation models your are interested)
 ├── run_table1.sh              # Table 1: Different init seeds → distinct fingerprints
 ├── run_table2.sh              # Table 2: Init fingerprint preserved after pre-training
 ├── run_table3.sh              # Table 3: Continual training doesn't confound fingerprint
-├── run_table4.sh              # Table 4: Same data, different seeds → distinct fingerprints
-├── run_table5.sh              # Table 5: Llama-2-7B finetune detection
-├── run_figure3.sh             # Figure 3: OLMo-2-7B training trajectory
+├── run_table4.sh              # Table 4: Same data and data order, different seeds → distinct fingerprints
+├── run_table5.sh              # Table 5: Llama-2-7B long-finetune detection
+├── run_figure3.sh             # Figure 3: OLMo-2-7B Long pre-training detection
 └── baselines/                 # Baseline methods and LeaFBench integration
     ├── LeaFBench/             # Benchmark across 6 model families, 58 models
     ├── REEF-master/           # REEF baseline
@@ -42,6 +39,7 @@ SeedPrints/
 ```bash
 pip install torch transformers scipy tqdm huggingface_hub
 ```
+这边建议用requirements
 
 ### Example: Test if llemma-7b is derived from Llama-2-7b
 

@@ -4,7 +4,11 @@ Prepare the Code Stack dataset for toy model continual training (Table 3).
 Downloads a Python subset of The Stack, tokenizes, chunks into 2048-token
 blocks, and saves to disk.
 
-NOTE: Uses the same tokenizer as train.py (huggyllama/llama-7b, vocab=32000).
+NOTE: We use the huggyllama/llama-7b tokenizer (vocab_size=32000) for
+historical reasons. meta-llama/Llama-2-7b-hf is the more standard choice
+and has the same vocab_size=32000, so either works identically. If you
+switch to a tokenizer with a different vocab size, update the LlamaConfig
+in train.py accordingly.
 """
 
 import os

@@ -6,7 +6,7 @@ Pre-trained toy models are available on [HuggingFace](https://huggingface.co/Yne
 
 ## Tokenizer Note
 
-All scripts use `huggyllama/llama-7b` tokenizer (vocab_size=32000). This must be consistent across data preparation, training, and finetuning. If you switch to a different tokenizer, update `prepare_openwebtext.py`, `train.py`, `finetune.py`, and the `LlamaConfig.vocab_size` accordingly.
+All scripts use `huggyllama/llama-7b` tokenizer (vocab_size=32000) for historical reasons. `meta-llama/Llama-2-7b-hf` is the more standard choice and has the same vocab_size=32000, so either works identically. If you switch to a tokenizer with a different vocab size, update `prepare_openwebtext.py`, `train.py`, `finetune.py`, and `LlamaConfig.vocab_size` accordingly.
 
 ## Steps
 

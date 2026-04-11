@@ -5,8 +5,10 @@ Downloads OpenWebText, tokenizes with Llama tokenizer, chunks into
 fixed-length (2048) blocks, and saves to disk.
 
 NOTE: We use the huggyllama/llama-7b tokenizer (vocab_size=32000) for
-consistency with the toy model config. If you want to use a different
-tokenizer, make sure to update the vocab_size in train.py accordingly.
+historical reasons. meta-llama/Llama-2-7b-hf is the more standard choice
+and has the same vocab_size=32000, so either works identically. If you
+switch to a tokenizer with a different vocab size, update the LlamaConfig
+in train.py accordingly.
 """
 
 import os
@@ -21,9 +23,6 @@ dataset = dataset["train"].train_test_split(test_size=0.0005, seed=42357, shuffl
 dataset["val"] = dataset.pop("test")
 
 # Load tokenizer
-# NOTE: huggyllama/llama-7b has vocab_size=32000. This must match the
-# vocab_size used in train.py's LlamaConfig. If you switch to a different
-# tokenizer (e.g., meta-llama/Llama-2-7b-hf), update both places.
 tokenizer = AutoTokenizer.from_pretrained("huggyllama/llama-7b")
 eos = tokenizer.eos_token_id
 

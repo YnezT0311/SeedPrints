@@ -9,9 +9,11 @@ on OpenWebText with a fixed data order (seed=global_seed). Two models with
 different init_seeds but the same global_seed will see exactly the same data
 in the same order, differing only in their initialization.
 
-NOTE: The tokenizer (huggyllama/llama-7b, vocab=32000) must match the one
-used in prepare_openwebtext.py. If you switch tokenizers, update both files
-and the LlamaConfig below.
+NOTE: We use the huggyllama/llama-7b tokenizer (vocab_size=32000) for
+historical reasons. meta-llama/Llama-2-7b-hf is the more standard choice
+and has the same vocab_size=32000, so either works identically. If you
+switch to a tokenizer with a different vocab size, update the LlamaConfig
+below and the prepare scripts accordingly.
 """
 
 import os
