@@ -15,10 +15,10 @@ Pre-trained toy models are available on [HuggingFace](https://huggingface.co/Yne
 
 ```bash
 # Llama: OpenWebText tokenized with Llama tokenizer
-python prepare_openwebtext.py
+python prepare_openwebtext.py --model_arch llama
 
 # Qwen: OpenWebText tokenized with Qwen tokenizer
-python prepare_openwebtext_qwen.py
+python prepare_openwebtext.py --model_arch qwen
 
 # Code Stack (for continual training, Table 3)
 python prepare_code_stack.py
