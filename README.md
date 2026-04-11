@@ -117,17 +117,11 @@ bash scripts/seed.sh
 
 ### Choosing between token and embedding input
 
-SeedPrint supports two types of random inputs. The key principle is: **both models must receive identical inputs** for a fair comparison.
+SeedPrint supports two types of random inputs. The key principle is: **both models must receive identical inputs** for a meaningful comparison.
 
-- **`--input_type token`** (recommended for foundation models): Random token IDs in `[0, 32000)` are shared across all models regardless of architecture or hidden size. Each model applies its own embedding layer, so the resulting hidden states are model-specific. This is the only viable option when comparing models with different hidden sizes (e.g., cross-family comparisons in LeaFBench).
+- **`--input_type token`** (recommended for foundation models): Random token IDs in `[0, 32000)` can be reused across all models regardless of architecture or hidden size. Each model will receive the same input sequences. This is the only viable option when comparing models with different hidden sizes (e.g., cross-family comparisons in LeaFBench).
 
-- **`--input_type embedding`** (recommended for toy models): Random continuous embeddings `~ N(mu, sigma)` bypass the embedding layer. This can capture more nuanced seed-level differences within the same model family, but requires both models to have the same hidden size. Token input can also distinguish seeds, but embedding input provides stronger signal for init-to-pretrained lineage detection.
-
-| Experiment | Default Input | Reason |
-|------------|--------------|--------|
-| Toy models (Tables 1-4) | `embedding` | Same architecture, stronger seed-level signal |
-| Foundation models (Table 5, Figure 3) | `token` | Cross-family fairness, different hidden sizes |
-| LeaFBench | `token` | Cross-family benchmark |
+- **`--input_type embedding`** (recommended for same-architecture comparisons): Random continuous embeddings `~ N(mu, sigma)` bypass the embedding layer, directly probing the transformer body. This captures more nuanced seed-level differences within the same model family, but requires both models to have the same hidden size. While token input can also distinguish seeds, embedding input yields a stronger signal because random continuous vectors are far out-of-distribution — the model has never seen such inputs during training, so the response is dominated by the initialization-dependent bias rather than learned behavior.
 
 ### Other arguments
 
