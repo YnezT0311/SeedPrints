@@ -46,7 +46,7 @@ conda activate fingerprint
 pip install -r requirements.txt
 ```
 
-### Example: Test if an OLMo-2-7B checkpoint shares lineage with an earlier checkpoint
+### Example: Test if the final OLMo-2-7B checkpoint shares lineage with an earlier checkpoint (after 928K steps / 3.9T tokens of pre-training)
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 python test_foundation_models.py \
