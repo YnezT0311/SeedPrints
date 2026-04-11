@@ -2,7 +2,7 @@
 
 Official code for [**SeedPrints: Fingerprints Can Even Tell Which Seed Your Large Language Model Was Trained From**](https://arxiv.org/abs/2509.26404) (ICLR 2026).
 
-SeedPrints is a model lineage detection method that determines whether a suspicious model B is derived from a given model A, not using the trained model family-wise behaviors but relying on the underlying bias originated from base model (even the randomly initialized model). Therefore, it 展现出远超于现有fingerprinting 方法的对于long pretraining阶段的detection表现。我们consider this as a biometric-like fingerprint， like human fingerprint，是something the model be born with at the random initialization, and tractable accross the lifecycle.
+SeedPrints is a model lineage detection method that determines whether a suspicious model B is derived from a given model A, not by relying on trained model family-wise behaviors but by leveraging the underlying bias originating from the base model — even the randomly initialized model. As a result, it significantly outperforms existing fingerprinting methods for detecting lineage across long pre-training stages. We consider this a biometric-like fingerprint: like a human fingerprint, it is something the model is born with at random initialization, and remains traceable across the entire lifecycle.
 
 ## How It Works
 
@@ -26,6 +26,7 @@ SeedPrints/
 ├── run_table4.sh              # Table 4: Same data and data order, different seeds → distinct fingerprints
 ├── run_table5.sh              # Table 5: Llama-2-7B long-finetune detection
 ├── run_figure3.sh             # Figure 3: OLMo-2-7B Long pre-training detection
+├── prepare_toy_models/        # Scripts to train toy models from scratch
 └── baselines/                 # Baseline methods and LeaFBench integration
     ├── LeaFBench/             # Benchmark across 6 model families, 58 models
     ├── REEF-master/           # REEF baseline
@@ -37,9 +38,8 @@ SeedPrints/
 ### Installation
 
 ```bash
-pip install torch transformers scipy tqdm huggingface_hub
+pip install -r requirements.txt
 ```
-这边建议用requirements
 
 ### Example: Test if llemma-7b is derived from Llama-2-7b
 
