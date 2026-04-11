@@ -106,7 +106,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py \
 
 | Setting | GPUs | Time |
 |---------|------|------|
-| From scratch (58 models, 2000 samples each) | 4× A40 (48GB) | ~6 hours |
+| From scratch (58 models, 2000 samples each) | 4× L40S (48GB) | ~6 hours |
 | With cached fingerprints | 1× GPU | ~5 minutes |
 
 The bottleneck is model loading + forward pass. Each 7B model takes ~4–5 minutes (load + 2000 forward passes at batch_size=4). The comparison/evaluation step takes only seconds.
