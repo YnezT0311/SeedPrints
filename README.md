@@ -46,12 +46,26 @@ conda activate fingerprint
 pip install -r requirements.txt
 ```
 
-### Example: Test if the final OLMo-2-7B checkpoint shares lineage with an earlier checkpoint (after 928K steps / 3.9T tokens of pre-training)
+### Example 1: OLMo-2-7B lineage detection (no token required)
+
+Test if the final OLMo-2-7B checkpoint shares lineage with an earlier checkpoint (after 928K steps / 3.9T tokens of pre-training):
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 python test_foundation_models.py \
     --target_model stage1-step928000-tokens3893B \
     --base_model stage1-step1000-tokens5B
+```
+
+### Example 2: Llama-2 fine-tune detection (HF token required)
+
+Test if llemma-7b is derived from Llama-2-7b:
+
+```bash
+export HF_TOKEN="your_token_here"  # Required for gated Llama models
+
+CUDA_VISIBLE_DEVICES=0,1 python test_foundation_models.py \
+    --target_model llemma-7b \
+    --base_model Llama-2-7b
 ```
 
 ## Reproducing Paper Results
