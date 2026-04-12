@@ -204,6 +204,7 @@ s_vector = invariant_terms(smodel_tag, layers)
 
 tmodel_tags = [
     "stage1-step1000-tokens5B",
+    "stage1-step104000-tokens437B",
     "stage1-step207000-tokens869B",
     "stage1-step310000-tokens1301B",
     "stage1-step413000-tokens1733B",

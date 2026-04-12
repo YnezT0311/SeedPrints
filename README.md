@@ -134,6 +134,16 @@ SeedPrint supports two types of random inputs. The key principle is: **both mode
 - **`--identity_mode coset`** (default): Use the intersection of both models' bottom-k dimensions. More robust than `base` (which uses only the base model's dimensions), especially when the base model is a trained model rather than a randomly initialized one.
 - **`--use_agg`**: Adds a second signal (single Kendall tau on per-sample mean across identity dimensions), combined with per-dim via max z-score and Bonferroni correction. Reduces variance and makes borderline false positives less likely to reach significance. Disabled by default, as the per-dim signal alone is already sufficient in all our experiments.
 
+### Hypothesis testing methods
+
+The codebase supports three hypothesis testing methods via `method=` in `seedprint.run_test()`:
+
+- **`"analytical"`** (default): Z-score against the closed-form null distribution of Kendall tau. Used in all experiments for efficiency. We validate its equivalence to the empirical methods through experiments and analysis (see Section 4 of the paper).
+- **`"empirical"` with `baseline="full_pipeline"`**: Corresponds to Algorithm 1 in the paper. Generates random [N, D] matrices and runs them through the full pipeline (identity extraction → normalization → correlation) to construct the null distribution empirically. Most thorough but slowest.
+- **`"empirical"` with `baseline="simplified"`**: Generates random [n, k] matrices with the same normalization but skips identity extraction. Captures softmax-induced cross-column dependencies that the analytical method assumes away.
+
+Both empirical methods support `test_type="t-test"` (default) or `test_type="u-test"` (Mann-Whitney U), and `num_trials` (default 10) for the number of random baseline trials.
+
 ## Citation
 
 ```bibtex
