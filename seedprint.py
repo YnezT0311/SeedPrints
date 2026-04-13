@@ -249,10 +249,15 @@ def run_test(hs_base, hs_target, buffer_k=DEFAULT_BUFFER_K,
             agg_tau, _ = kendalltau(agg_a, agg_b)
             z_agg = (agg_tau - null_params["agg_mu"]) / max(null_params["agg_std"], 1e-10)
             z_max = max(z_perdim, z_agg)
-            p_value = min(1.0, 2.0 * 2.0 * (1.0 - _norm_dist.cdf(z_max)))
-            result.update({"agg_tau": agg_tau, "z_agg": z_agg, "z_max": z_max})
+            # Use logsf for numerical stability (avoids p=0 for large z)
+            log_p = np.log(2) + np.log(2) + _norm_dist.logsf(z_max)
+            p_value = min(1.0, np.exp(log_p))
+            result.update({"agg_tau": agg_tau, "z_agg": z_agg, "z_max": z_max,
+                           "log10_p": log_p / np.log(10)})
         else:
-            p_value = min(1.0, 2.0 * (1.0 - _norm_dist.cdf(z_perdim)))
+            log_p = np.log(2) + _norm_dist.logsf(z_perdim)
+            p_value = min(1.0, np.exp(log_p))
+            result["log10_p"] = log_p / np.log(10)
 
         result["p_value"] = p_value
 

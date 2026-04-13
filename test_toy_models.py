@@ -222,7 +222,9 @@ def main():
     logging.info(f"z_perdim: {results['z_perdim']:.4f}")
     if args.use_agg:
         logging.info(f"z_agg: {results['z_agg']:.4f}")
-    logging.info(f"p_value: {results['p_value']:.4g}")
+    logging.info(f"p_value: {results['p_value']:.4e}")
+    if 'log10_p' in results:
+        logging.info(f"log10_p: {results['log10_p']:.2f}")
     logging.info(f"k: {results['k']}")
 
     # Save JSON
