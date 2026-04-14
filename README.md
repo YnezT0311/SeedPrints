@@ -28,8 +28,8 @@ SeedPrints/
 ├── test_foundation_models.py  # Foundation model experiments (Table 5, Figure 3)
 ├── run_table1.sh              # Table 1: Different init seeds -> distinct fingerprints
 ├── run_table2.sh              # Table 2: Init fingerprint preserved after pre-training
-├── run_table3.sh              # Table 3: Continual training does not confound fingerprint
-├── run_table4.sh              # Table 4: Same data and data order, different seeds -> distinct fingerprints
+├── run_table3.sh              # Table 3: Same data and data order, different seeds -> distinct fingerprints
+├── run_table4.sh              # Table 4: Continual training does not confound fingerprint
 ├── run_table5.sh              # Table 5: Llama-2-7B fine-tune detection
 ├── run_figure3.sh             # Figure 3: OLMo-2-7B long pre-training detection
 ├── prepare_toy_models/        # Scripts to train toy models from scratch
@@ -83,8 +83,8 @@ We trained the small toy models (~160M parameters llama-style and qwen-style) wi
 ```bash
 bash run_table1.sh   # Different init seeds (expect p > 0.01)
 bash run_table2.sh   # Init→Pretrained same seed (expect p < 0.01)
-bash run_table3.sh   # Continual training (same lineage p<0.01, cross-seed p>0.01)
-bash run_table4.sh   # Cross-seed (expect p > 0.01)
+bash run_table3.sh   # Cross-seed (expect p > 0.01)
+bash run_table4.sh   # Continual training (same lineage p<0.01, cross-seed p>0.01)
 ```
 
 ### Foundation Models (Table 5)

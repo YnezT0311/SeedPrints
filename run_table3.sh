@@ -1,30 +1,21 @@
 #!/bin/bash
-# Table 3: Continual training on diverse data doesn't confound fingerprint
-# Same-lineage (seed 1000 matches): expect p < 0.01
-# Cross-lineage (seed 123 ≠ 1000): expect p > 0.01
+# Table 3: Same data+order, different seeds → distinct fingerprints (expect p > 0.01)
+# Cross-seed: init-s_i as base, openwebtext-s_j as target (s_i ≠ s_j)
 # Default: embedding input + coset + perdim
 
-# Same-lineage
-CUDA_VISIBLE_DEVICES=0,1 python test_toy_models.py \
-    --target_model "TinyStoriesV2_cleaned-1000" \
-    --base_model "openwebtext-1000" \
-    --num_samples 10000 --fingerprint_len 1024 &
+pairs=("1000:42" "42:123" "123:2000" "2000:1000")
+gpu=0
 
-CUDA_VISIBLE_DEVICES=2,3 python test_toy_models.py \
-    --target_model "code_stack-1000" \
-    --base_model "openwebtext-1000" \
-    --num_samples 10000 --fingerprint_len 1024 &
-
-# Cross-lineage
-CUDA_VISIBLE_DEVICES=4,5 python test_toy_models.py \
-    --target_model "TinyStoriesV2_cleaned-123" \
-    --base_model "openwebtext-1000" \
-    --num_samples 10000 --fingerprint_len 1024 &
-
-CUDA_VISIBLE_DEVICES=6,7 python test_toy_models.py \
-    --target_model "code_stack-123" \
-    --base_model "openwebtext-1000" \
-    --num_samples 10000 --fingerprint_len 1024 &
-
+for pair in "${pairs[@]}"; do
+    IFS=':' read -r s_base s_target <<< "$pair"
+    gpu_pair="${gpu},$((gpu+1))"
+    echo ">>> Table 3: openwebtext-${s_target} vs init-${s_base} on GPU ${gpu_pair}"
+    CUDA_VISIBLE_DEVICES=${gpu_pair} python test_toy_models.py \
+        --target_model "openwebtext-${s_target}" \
+        --base_model "init-${s_base}" \
+        --num_samples 10000 --fingerprint_len 1024 &
+    gpu=$(( (gpu + 2) % 8 ))
+done
 wait
+
 echo "=== Table 3 complete ==="
