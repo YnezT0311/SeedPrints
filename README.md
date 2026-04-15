@@ -101,7 +101,7 @@ Default setting: **token input + coset + per-dim only**.
 bash run_figure3.sh  # OLMo-2-7B checkpoints vs final (expect p < 0.01)
 ```
 
-### LeaFBench (58 models, 6 families)
+### LeaFBench (65 models, 7 families)
 
 See [baselines/LeaFBench/SeedPrints_README.md](baselines/LeaFBench/SeedPrints_README.md) for details.
 
