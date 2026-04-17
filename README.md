@@ -12,6 +12,10 @@ SeedPrints takes a fundamentally different approach: instead of relying on train
 
 ## How It Works
 
+<p align="center">
+  <img src="figures/algorithm_figure.png" width="800">
+</p>
+
 1. Feed shared random inputs (token sequences or random embeddings) through both models
 2. Extract last-layer hidden states and identify the "identity dimensions" (i.e., the most biased output dimensions) of each model
 3. Compute per-dimension Kendall tau correlation with softmax normalization between models' identity dimensions
